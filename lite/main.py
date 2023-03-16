@@ -95,7 +95,6 @@ async def completeprayer(update, context):
 
 async def showprayer(update, context):
     """Usage: /showprayer"""
-    # TODO: get from show prayer list
     text = '\n'.join(list(context.user_data["ongoing"].values()))
     if text == '':
         text = 'No prayer requests! Are you slacking?'
@@ -103,7 +102,6 @@ async def showprayer(update, context):
 
 async def showcompletedprayer(update, context):
     """Usage: /showcompletedprayer"""
-    # TODO: get from show completed prayer list
     await update.message.reply_text('\n'.join(list(context.user_data["complete"].values())))
 
 async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
