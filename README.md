@@ -8,8 +8,10 @@ your victories
 
 The difference between a Full version and a Lite version is the data storage 
 strategy. Full version will be a full blown architecture,accommodating for cloud
-VM deployments so as to scale for churches. Lite version stores with a text 
-file, mainly for personal use
+VM deployments so as to scale for churches. Lite version should store with 
+local chat persistence (Using json file for now)
+For more information you can check these out:
+https://github.com/python-telegram-bot/python-telegram-bot/wiki/Making-your-bot-persistent
 
 # How to set this up yourself to develop
 ## using full version
@@ -47,6 +49,4 @@ You can raise an issue and a pull request (if you found a solution)
 ## Sample env file
 ```
 TELEGRAM_API_KEY=
-PRAYER_LIST_FILE_DIR=
-COMPLETED_PRAYER_LIST_FILE_DIR=
 ```
