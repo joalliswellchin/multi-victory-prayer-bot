@@ -9,7 +9,7 @@ your victories
 The difference between a Full version and a Lite version is the data storage 
 strategy. Full version will be a full blown architecture,accommodating for cloud
 VM deployments so as to scale for churches. Lite version should store with 
-local chat persistence (Using json file for now)
+local chat persistence (Using pickle file for now)
 For more information you can check these out:
 https://github.com/python-telegram-bot/python-telegram-bot/wiki/Making-your-bot-persistent
 
