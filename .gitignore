@@ -129,4 +129,4 @@ dmypy.json
 .pyre/
 
 # conversation saved on lite mode
-*saved_convo
+*saved_convo*
