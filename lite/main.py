@@ -1,14 +1,29 @@
-# this bot is to help test. API key and env is hardcoded here
-# bot name is joalliswellchin test bot
+"""
+Data structures:
+context.chatdata = {
+    "ongoing": {
+        "title": str
+    },
+    "complete": {
+        "title": str
+    },
+    "fulfilled": {
+        "title": str
+    }
+}
+context.userdata = {
+    "prayer_title": str
+}
+"""
 
 import logging
 import os
 from uuid import uuid4
 
 from dotenv import load_dotenv
-from telegram import Update
+from telegram import Update, ReplyKeyboardRemove
 from telegram.ext import (filters, MessageHandler, ApplicationBuilder, 
-ContextTypes, CommandHandler, PicklePersistence)
+ContextTypes, CommandHandler, PicklePersistence, ConversationHandler)
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -46,19 +61,6 @@ Here are the following commands:
 /showcompletedprayer - show fulfilled prayer list
     """
     await context.bot.send_message(chat_id=update.effective_chat.id, text=help_text)
-
-# TODO: add prompts, and save it in a way where uuid is not used or not visible
-async def addprayer(update, context):
-    """Usage: /addprayer prayer_request_by_user"""
-    # Generate ID by getting the last number and add 1
-    key = str(uuid4()) 
-    # We don't use context.args here, because the value may contain whitespaces
-    value = update.message.text.partition(' ')[2]
-
-    # Store value
-    context.chat_data["ongoing"][key] = value
-    # Send the key to the user
-    await update.message.reply_text(key)
 
 # TODO: add prompts, and save the message based on the index
 async def editprayer(update, context):
@@ -143,6 +145,45 @@ async def showvictory(update, context):
 async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id, text="Sorry, I didn't understand that command.")
 
+TYPING_PRAYER_TITLE, TYPING_PRAYER = range(2)
+
+async def get_prayer_title(update, context):
+    """Usage: /addprayer prayer_request_by_user"""
+    # Generate ID by getting the last number and add 1
+    await update.message.reply_text(
+        "What is the prayer title?",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+    return TYPING_PRAYER_TITLE
+
+async def get_prayer(update, context):
+    context.user_data["prayer_title"] = update.message.text
+    await update.message.reply_text(
+        "What is the prayer?",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+    return TYPING_PRAYER
+
+async def addprayer(update, context):
+    prayer_title = context.user_data["prayer_title"]
+    context.chat_data["ongoing"][prayer_title] = update.message.text
+    await update.message.reply_text(
+        "Prayer added",# + context.args[0],
+        reply_markup=ReplyKeyboardRemove(),
+    )
+    del context.user_data["prayer_title"]
+    return ConversationHandler.END
+
+async def end_convo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Display the gathered info and end the conversation."""
+    await update.message.reply_text(
+        "Ending Conversation!",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+    if "prayer_title" in context.user_data:
+        del context.user_data["prayer_title"]
+    return ConversationHandler.END
+
 if __name__ == '__main__':
     # application = ApplicationBuilder().token(os.environ["TELEGRAM_API_KEY"]).build()
 
@@ -153,7 +194,6 @@ if __name__ == '__main__':
     # All commands added here
     start_handler = CommandHandler('start', start)
     help_cmd_handler = CommandHandler('help', help)
-    addprayer_cmd_handler = CommandHandler('addprayer', addprayer)
     editprayer_cmd_handler = CommandHandler('editprayer', editprayer)
     delprayer_cmd_handler = CommandHandler('delprayer', delprayer)
     completeprayer_cmd_handler = CommandHandler('completeprayer', completeprayer)
@@ -164,7 +204,6 @@ if __name__ == '__main__':
     showvictory_cmd_handler = CommandHandler('showvictory', showvictory)
     application.add_handler(start_handler)
     application.add_handler(help_cmd_handler)
-    application.add_handler(addprayer_cmd_handler)
     application.add_handler(editprayer_cmd_handler)
     application.add_handler(delprayer_cmd_handler)
     application.add_handler(completeprayer_cmd_handler)
@@ -175,20 +214,26 @@ if __name__ == '__main__':
     application.add_handler(showvictory_cmd_handler)
     
     # Allow commands to be also receivable in text
-    help_msg_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), help)
-    # addprayer_msg_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), addprayer)
-    # editprayer_msg_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), editprayer)
-    # delprayer_msg_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), delprayer)
-    # completeprayer_msg_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), completeprayer)
-    # showprayer_msg_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), showprayer)
-    # showcompletedprayer_msg_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), showcompletedprayer)
-    # application.add_handler(help_msg_handler)
-    # application.add_handler(addprayer_msg_handler)
-    # application.add_handler(editprayer_msg_handler)
-    # # application.add_handler(delprayer_msg_handler)
-    # application.add_handler(completeprayer_msg_handler)
-    # application.add_handler(showprayer_msg_handler)
-    # application.add_handler(showcompletedprayer_msg_handler)
+    # help_msg_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), help)
+    addprayer_conv_handler = ConversationHandler(
+        entry_points=[CommandHandler("addprayer", get_prayer_title)],
+        states={
+            TYPING_PRAYER_TITLE: [
+                MessageHandler(
+                    filters.TEXT & ~(filters.COMMAND | filters.Regex("^Done$")),
+                    get_prayer,
+                )
+            ],
+            TYPING_PRAYER: [
+                MessageHandler(
+                    filters.TEXT & ~(filters.COMMAND | filters.Regex("^Done$")),
+                    addprayer,
+                )
+            ],
+        },
+        fallbacks=[MessageHandler(filters.Regex("^Done$"), end_convo)],
+    )
+    application.add_handler(addprayer_conv_handler)
 
     # Handle all other commands that are not recognised
     unknown_handler = MessageHandler(filters.COMMAND, unknown)
