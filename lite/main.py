@@ -2,10 +2,7 @@
 Data structures:
 context.chatdata = {
     "ongoing": {
-        "title": str
-    },
-    "complete": {
-        "title": str
+        "title": [str]
     },
     "fulfilled": {
         "title": str
@@ -16,6 +13,7 @@ context.userdata = {
 }
 
 Other notes:
+- Completed prayers are prayers with prayer titles and prayer not blank
 - Placing all in one file to make this easier for copy pasta as of now
 - Not building prayer titles editing because it should be intended to delete over editing
 - Not building 1 prayer title : M prayer, but will consider doing so as it is a valid use case
@@ -37,40 +35,18 @@ logging.basicConfig(
 
 load_dotenv()
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # TODO: Fix bug where there the conversation is saved and can be viewed in another chat
-    # set up data
-    context.chat_data["ongoing"] = dict()
-    context.chat_data["complete"] = dict()
-    context.chat_data["fulfilled"] = dict()
-    intro = """
-Hi Prayer Warrior! Welcome to the MVP bot!
-
-This bot is aimed to improve your prayer walk!
-Hit /help if it is your first time here to get to know me!
-"""
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=intro)
-
-async def help(update, context):
-    help_text = """
-Here are the following commands:
-/help - prints the list of available commands and what they do
-/addprayer - add a prayer to the prayer request list
-/editprayer - edit a prayer to the prayer request list at specified prayer title
-/delprayer - delete a prayer to the prayer request list at specified prayer title
-/completeprayer - you have prayed this, and add prayer to the prayer title
-/fulfillprayer - prayers that have been answered
-/addfulfillprayer - add answered prayer to prayer list directly
-/showprayer - show current prayer list
-/showcompletedprayer - show completed prayer list
-/showvictory - show fulfilled prayer list
-    """
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=help_text)
-
-
-
-async def showprayer(update, context):
-    """Usage: /showprayer"""
+# Add prayer, complete prayer, fulfill prayer, edit prayer, delete prayer
+TYPING_PRAYER_TITLE, TYPING_PRAYER, NEXT_PRAYER, \
+    COMPLETE_PRAYER, \
+    SET_FULFILL_PRAYER, FULFILL_PRAYER, \
+    ADD_FULFILL_PRAYER, \
+    EDIT_PRAYER, \
+    DEL_PRAYER = range(9)
+# ------------------------------------------------------------------------------
+# Display functions
+# ------------------------------------------------------------------------------
+async def showalluntrackedprayer(update, context):
+    """Usage: /showalluntrackedprayer"""
     text = '\n'.join(
         "{}: {}".format(k, v) for k, v in context.chat_data["ongoing"].items()
     )
@@ -78,11 +54,24 @@ async def showprayer(update, context):
         text = 'No prayer requests! Are you slacking?'
     await update.message.reply_text(text)
 
+async def showprayer(update, context):
+    """Usage: /showprayer"""
+    new_list = context.chat_data["ongoing"].items()
+    text = '\n'.join(
+        # "{}: {}".format(k, v) for k, v in context.chat_data["ongoing"].items()
+        "{}: {}".format(k, v) for k, v in new_list
+    )
+    if text == '':
+        text = 'No prayer requests! Are you slacking?'
+    await update.message.reply_text(text)
+
 async def showcompletedprayer(update, context):
     """Usage: /showcompletedprayer"""
+    new_list = context.chat_data["ongoing"] #for key, value in context.chat_data["ongoing"]:
     await update.message.reply_text(
         '\n'.join(
-            "{}: {}".format(k, v) for k, v in context.chat_data["complete"].items()
+            # "{}: {}".format(k, v) for k, v in context.chat_data["ongoing"].items()
+            "{}: {}".format(k, v) for k, v in new_list
             )
         )
 
@@ -94,9 +83,6 @@ async def showvictory(update, context):
             "{}: {}".format(k, v) for k, v in context.chat_data["fulfilled"].items()
         )
     )
-
-TYPING_PRAYER_TITLE, TYPING_PRAYER, NEXT_PRAYER, COMPLETE_PRAYER, \
-    SET_PRAYER_TITLE = range(5)
 
 # ------------------------------------------------------------------------------
 # add prayer
@@ -152,7 +138,6 @@ async def input_completeprayer_title(update, context):
     return COMPLETE_PRAYER
 
 async def check_input_completeprayer(update, context):
-    """Usage: /completeprayer"""
     if update.message.text in context.chat_data["ongoing"]:
         if context.chat_data["ongoing"][update.message.text]:
             #TODO: build 1:M here
@@ -177,68 +162,101 @@ async def check_input_completeprayer(update, context):
     return TYPING_PRAYER
 
 # ------------------------------------------------------------------------------
-# add fulfilled prayer
+# add fulfilled prayer via complete prayer list
 # ------------------------------------------------------------------------------
-# TODO: add prompts
-# TODO: is a repeat of completeprayer, can be made general
-async def fulfillprayer(update, context):
-    """Usage: /fulfillprayer key"""
-    list_name = "complete" # default left as ongoing for now
-    key = context.args[0]
-    value = context.chat_data[list_name].get(key)
-    reply = 'Prayer point could not be found'
-    if value:
-        context.chat_data[list_name].pop(key)
-        context.chat_data["fulfilled"][key] = value # TODO: calculate numeric key here
-        reply = 'Yay! You have completed this prayer!'
-    await update.message.reply_text(reply)
+async def input_fulfillprayer(update, context):
+    """Usage: /fulfillprayer"""
+    await update.message.reply_text(
+        "Which prayer title has been fulfilled?",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+    return SET_FULFILL_PRAYER
 
-# TODO: add prompts, and save it in a way where uuid is not used or not visible
+async def check_input_fulfillprayer(update, context):
+    #TODO: add checks for fulfill prayer
+    await update.message.reply_text(
+        "prayer title does not exist",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+    return FULFILL_PRAYER
+
+
+# ------------------------------------------------------------------------------
+# add fulfilled prayer directly
+# ------------------------------------------------------------------------------
+async def input_addfulfillprayer(update, context):
+    """Usage: /addfulfillprayer"""
+    await update.message.reply_text("")
+    return ADD_FULFILL_PRAYER
+
 async def addfulfillprayer(update, context):
-    """Usage: /addfulfillprayer prayer_request_by_user"""
-    # Generate ID by getting the last number and add 1
-    key = str(uuid4()) 
-    # We don't use context.args here, because the value may contain whitespaces
-    value = update.message.text.partition(' ')[2]
-
-    # Store value
-    context.chat_data["fulfilled"][key] = value
-    # Send the key to the user
-    await update.message.reply_text(key)
+    await update.message.reply_text("")
 
 # ------------------------------------------------------------------------------
 # edit prayer
 # ------------------------------------------------------------------------------
-# TODO: add prompts, and save the message based on the index
+async def input_editprayer(update, context):
+    return EDIT_PRAYER
+
 async def editprayer(update, context):
     """Usage: /editprayer key prayer_request_by_user"""
     list_name = "ongoing" # default left as ongoing for now
-    key = context.args[0]
-    value = context.chat_data[list_name].get(key)
+    prayer_title = context.user_data["prayer_title"]
+    value = context.chat_data[list_name].get(prayer_title)
     reply = 'Prayer point could not be found'
     if value:
-        context.chat_data[list_name][key] = str(update.message.text.split(' ', 2)[-1])
+        context.chat_data[list_name][prayer_title] = str(update.message.text.split(' ', 2)[-1])
         reply = 'Changes have been saved'
     await update.message.reply_text(reply)
 
 # ------------------------------------------------------------------------------
 # delete prayer
 # ------------------------------------------------------------------------------
-# TODO: add prompts
+async def input_delprayer(update, context):
+    return DEL_PRAYER
+
 async def delprayer(update, context):
     """Usage: /delprayer key"""
     list_name = "ongoing" # default left as ongoing for now
-    key = context.args[0]
-    value = context.chat_data[list_name].get(key)
+    prayer_title = context.user_data["prayer_title"]
+    value = context.chat_data[list_name].get(prayer_title)
     reply = 'Prayer point could not be found'
     if value:
-        context.chat_data[list_name].pop(key)
+        context.chat_data[list_name].pop(prayer_title)
         reply = 'Deleted prayer'
     await update.message.reply_text(reply)
 
 # ------------------------------------------------------------------------------
 # general functions
 # ------------------------------------------------------------------------------
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # TODO: Fix bug where there the conversation is saved and can be viewed in another chat
+    # set up data
+    context.chat_data["ongoing"] = dict()
+    context.chat_data["fulfilled"] = dict()
+    intro = """
+Hi Prayer Warrior! Welcome to the MVP bot!
+
+This bot is aimed to improve your prayer walk!
+Hit /help if it is your first time here to get to know me!
+"""
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=intro)
+
+async def help(update, context):
+    help_text = """
+Here are the following commands:
+/help - prints the list of available commands and what they do
+/addprayer - add a prayer to the prayer request list
+/editprayer - edit a prayer to the prayer request list at specified prayer title
+/delprayer - delete a prayer to the prayer request list at specified prayer title
+/completeprayer - you have prayed this, and add prayer to the prayer title
+/fulfillprayer - prayers that have been answered
+/addfulfillprayer - add answered prayer to prayer list directly
+/showprayer - show current prayer list
+/showcompletedprayer - show completed prayer list
+/showvictory - show fulfilled prayer list
+    """
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=help_text)
 async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(
         chat_id=update.effective_chat.id, 
@@ -250,6 +268,22 @@ async def addprayer(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     context.chat_data["ongoing"][prayer_title] = update.message.text
     await update.message.reply_text(
         "Prayer added",# + context.args[0],
+        reply_markup=ReplyKeyboardRemove(),
+    )
+    del context.user_data["prayer_title"]
+    return ConversationHandler.END
+
+async def fulfillprayer(update, context):
+    list_name = "ongoing"
+    prayer_title = context.user_data["prayer_title"]
+    value = context.chat_data[list_name].get(prayer_title)
+    reply = 'Prayer point could not be found'
+    if value:
+        context.chat_data[list_name].pop(prayer_title)
+        context.chat_data["fulfilled"][prayer_title] = value 
+        reply = 'Yay! You have completed this prayer!'
+    await update.message.reply_text(
+        reply,
         reply_markup=ReplyKeyboardRemove(),
     )
     del context.user_data["prayer_title"]
@@ -278,19 +312,13 @@ if __name__ == '__main__':
     # All commands added here
     start_handler = CommandHandler('start', start)
     help_cmd_handler = CommandHandler('help', help)
-    editprayer_cmd_handler = CommandHandler('editprayer', editprayer)
-    delprayer_cmd_handler = CommandHandler('delprayer', delprayer)
-    fulfillprayer_cmd_handler = CommandHandler('fulfillprayer', fulfillprayer)
-    addfulfillprayer_cmd_handler = CommandHandler('addfulfillprayer', addfulfillprayer)
+    showalluntrackedprayer_cmd_handler = CommandHandler('showalluntrackedprayer', showalluntrackedprayer)
     showprayer_cmd_handler = CommandHandler('showprayer', showprayer)
     showcompletedprayer_cmd_handler = CommandHandler('showcompletedprayer', showcompletedprayer)
     showvictory_cmd_handler = CommandHandler('showvictory', showvictory)
     application.add_handler(start_handler)
     application.add_handler(help_cmd_handler)
-    application.add_handler(editprayer_cmd_handler)
-    application.add_handler(delprayer_cmd_handler)
-    application.add_handler(fulfillprayer_cmd_handler)
-    application.add_handler(addfulfillprayer_cmd_handler)
+    application.add_handler(showalluntrackedprayer_cmd_handler)
     application.add_handler(showprayer_cmd_handler)
     application.add_handler(showcompletedprayer_cmd_handler)
     application.add_handler(showvictory_cmd_handler)
@@ -348,8 +376,87 @@ if __name__ == '__main__':
         },
         fallbacks=[MessageHandler(filters.Regex("^EXIT$"), end_convo)],
     )
+    #TODO: Complete these flow
+    fulfill_conv_handler = ConversationHandler(
+        entry_points=[
+            CommandHandler(
+                "fulfillprayer", 
+                input_fulfillprayer
+            )
+        ],
+        states={
+            SET_FULFILL_PRAYER: [
+                MessageHandler(
+                    filters.TEXT & ~(filters.COMMAND | filters.Regex("^EXIT$")),
+                    check_input_completeprayer,
+                )
+            ],
+            FULFILL_PRAYER: [
+                MessageHandler(
+                    filters.TEXT & ~(filters.COMMAND | filters.Regex("^EXIT$")),
+                    addprayer,
+                )
+            ],
+        },
+        fallbacks=[MessageHandler(filters.Regex("^EXIT$"), end_convo)],
+    )
+    addfulfill_conv_handler = ConversationHandler(
+        entry_points=[
+            CommandHandler(
+                "addfulfillprayer", 
+                input_addfulfillprayer
+            )
+        ],
+        states={
+            ADD_FULFILL_PRAYER: [
+                MessageHandler(
+                    filters.TEXT & ~(filters.COMMAND | filters.Regex("^EXIT$")),
+                    addfulfillprayer,
+                )
+            ],
+        },
+        fallbacks=[MessageHandler(filters.Regex("^EXIT$"), end_convo)],
+    )
+    editprayer_conv_handler = ConversationHandler(
+        entry_points=[
+            CommandHandler(
+                "editprayer", 
+                input_editprayer
+            )
+        ],
+        states={
+            EDIT_PRAYER: [
+                MessageHandler(
+                    filters.TEXT & ~(filters.COMMAND | filters.Regex("^EXIT$")),
+                    editprayer,
+                )
+            ],
+        },
+        fallbacks=[MessageHandler(filters.Regex("^EXIT$"), end_convo)],
+    )
+    delprayer_conv_handler = ConversationHandler(
+        entry_points=[
+            CommandHandler(
+                "delprayer", 
+                input_delprayer
+            )
+        ],
+        states={
+            DEL_PRAYER: [
+                MessageHandler(
+                    filters.TEXT & ~(filters.COMMAND | filters.Regex("^EXIT$")),
+                    delprayer,
+                )
+            ],
+        },
+        fallbacks=[MessageHandler(filters.Regex("^EXIT$"), end_convo)],
+    )
     application.add_handler(add_conv_handler)
     application.add_handler(complete_conv_handler)
+    application.add_handler(fulfill_conv_handler)
+    application.add_handler(addfulfill_conv_handler)
+    application.add_handler(editprayer_conv_handler)
+    application.add_handler(delprayer_conv_handler)
 
     # Handle all other commands that are not recognised
     unknown_handler = MessageHandler(filters.COMMAND, unknown)
