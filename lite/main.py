@@ -107,7 +107,7 @@ async def input_prayer_title_response(update, context):
     else:
         reply_keyboard = [["Yes", "Not now"]]
         context.user_data["prayer_title"] = update.message.text #store this for continuing
-        context.chat_data["ongoing"][update.message.text] = ""
+        context.chat_data["ongoing"][update.message.text] = list()
         await update.message.reply_text(
             "Prayer title added. Would you like to continue adding a prayer?",
             reply_markup=ReplyKeyboardMarkup(
@@ -138,22 +138,24 @@ async def input_completeprayer_title(update, context):
     return COMPLETE_PRAYER
 
 async def check_input_completeprayer(update, context):
-    if update.message.text in context.chat_data["ongoing"]:
-        if context.chat_data["ongoing"][update.message.text]:
-            #TODO: build 1:M here
-            await update.message.reply_text(
-                "There is already a prayer here! Try editing the prayer?",
-                reply_markup=ReplyKeyboardRemove(),
-            )
-            context.user_data.clear()
-            return ConversationHandler.END
-    else:
+    # uncomment if you only need 1 prayer per prayer title
+    # if update.message.text in context.chat_data["ongoing"]:
+    #     if context.chat_data["ongoing"][update.message.text]:
+    #         await update.message.reply_text(
+    #             "There is already a prayer here! Try editing the prayer?",
+    #             reply_markup=ReplyKeyboardRemove(),
+    #         )
+    #         context.user_data.clear()
+    #         return ConversationHandler.END
+    # else:
+    if not update.message.text in context.chat_data["ongoing"]:
         await update.message.reply_text(
             "Not able to find prayer title! Try checking your caps!",
             reply_markup=ReplyKeyboardRemove(),
         )
         context.user_data.clear()
         return ConversationHandler.END
+    # set current user data to hold the message first for append later
     context.user_data["prayer_title"] = update.message.text
     await update.message.reply_text(
         "What is the prayer?",
@@ -265,7 +267,7 @@ async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def addprayer(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     prayer_title = context.user_data["prayer_title"]
-    context.chat_data["ongoing"][prayer_title] = update.message.text
+    context.chat_data["ongoing"][prayer_title].append(update.message.text)
     await update.message.reply_text(
         "Prayer added",# + context.args[0],
         reply_markup=ReplyKeyboardRemove(),
