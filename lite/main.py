@@ -19,6 +19,7 @@ Other notes:
 - Not building 1 prayer title : M prayer, but will consider doing so as it is a valid use case
 """
 
+from datetime import datetime
 import logging
 import os
 from uuid import uuid4
@@ -38,10 +39,10 @@ load_dotenv()
 # Add prayer, complete prayer, fulfill prayer, edit prayer, delete prayer
 TYPING_PRAYER_TITLE, TYPING_PRAYER, NEXT_PRAYER, \
     COMPLETE_PRAYER, \
-    SET_FULFILL_PRAYER, \
-    ADD_FULFILL_PRAYER, \
+    FULFILL_PRAYER, \
+    ADD_FULFILL_PRAYER, SET_FULFILL_PRAYER, \
     EDIT_PRAYER, \
-    DEL_PRAYER = range(8)
+    DEL_PRAYER = range(9)
 # ------------------------------------------------------------------------------
 # Display functions
 # ------------------------------------------------------------------------------
@@ -172,7 +173,7 @@ async def input_fulfillprayer(update, context):
         "Which prayer title has been fulfilled?",
         reply_markup=ReplyKeyboardRemove(),
     )
-    return SET_FULFILL_PRAYER
+    return FULFILL_PRAYER
 
 async def check_input_fulfillprayer(update, context):
     prayer_title = update.message.text
@@ -183,7 +184,8 @@ async def check_input_fulfillprayer(update, context):
         )
         context.user_data.clear()
         return ConversationHandler.END
-    context.chat_data["fulfilled"][prayer_title] = context.chat_data["ongoing"][prayer_title]
+    now = datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
+    context.chat_data["fulfilled"][now + " - " + prayer_title] = context.chat_data["ongoing"][prayer_title]
     context.chat_data["ongoing"].pop(prayer_title)
     await update.message.reply_text(
         "Prayer fulfilled! Yay!",
@@ -381,7 +383,7 @@ if __name__ == '__main__':
             )
         ],
         states={
-            SET_FULFILL_PRAYER: [
+            FULFILL_PRAYER: [
                 MessageHandler(
                     filters.TEXT & ~(filters.COMMAND | filters.Regex("^EXIT$")),
                     check_input_fulfillprayer,
