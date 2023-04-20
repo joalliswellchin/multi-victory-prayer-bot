@@ -5,7 +5,7 @@ context.chatdata = {
         "title": [str]
     },
     "fulfilled": {
-        "title": str
+        "title": [str]
     }
 }
 context.userdata = {
@@ -38,10 +38,10 @@ load_dotenv()
 # Add prayer, complete prayer, fulfill prayer, edit prayer, delete prayer
 TYPING_PRAYER_TITLE, TYPING_PRAYER, NEXT_PRAYER, \
     COMPLETE_PRAYER, \
-    SET_FULFILL_PRAYER, FULFILL_PRAYER, \
+    SET_FULFILL_PRAYER, \
     ADD_FULFILL_PRAYER, \
     EDIT_PRAYER, \
-    DEL_PRAYER = range(9)
+    DEL_PRAYER = range(8)
 # ------------------------------------------------------------------------------
 # Display functions
 # ------------------------------------------------------------------------------
@@ -175,12 +175,22 @@ async def input_fulfillprayer(update, context):
     return SET_FULFILL_PRAYER
 
 async def check_input_fulfillprayer(update, context):
-    #TODO: add checks for fulfill prayer
+    prayer_title = update.message.text
+    if not prayer_title in context.chat_data["ongoing"]:
+        await update.message.reply_text(
+            "Not able to find prayer title! Try checking your caps!",
+            reply_markup=ReplyKeyboardRemove(),
+        )
+        context.user_data.clear()
+        return ConversationHandler.END
+    context.chat_data["fulfilled"][prayer_title] = context.chat_data["ongoing"][prayer_title]
+    context.chat_data["ongoing"].pop(prayer_title)
     await update.message.reply_text(
-        "prayer title does not exist",
+        "Prayer fulfilled! Yay!",
         reply_markup=ReplyKeyboardRemove(),
     )
-    return FULFILL_PRAYER
+    context.user_data.clear()
+    return ConversationHandler.END
 
 
 # ------------------------------------------------------------------------------
@@ -270,22 +280,6 @@ async def addprayer(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     context.chat_data["ongoing"][prayer_title].append(update.message.text)
     await update.message.reply_text(
         "Prayer added",# + context.args[0],
-        reply_markup=ReplyKeyboardRemove(),
-    )
-    del context.user_data["prayer_title"]
-    return ConversationHandler.END
-
-async def fulfillprayer(update, context):
-    list_name = "ongoing"
-    prayer_title = context.user_data["prayer_title"]
-    value = context.chat_data[list_name].get(prayer_title)
-    reply = 'Prayer point could not be found'
-    if value:
-        context.chat_data[list_name].pop(prayer_title)
-        context.chat_data["fulfilled"][prayer_title] = value 
-        reply = 'Yay! You have completed this prayer!'
-    await update.message.reply_text(
-        reply,
         reply_markup=ReplyKeyboardRemove(),
     )
     del context.user_data["prayer_title"]
@@ -390,13 +384,7 @@ if __name__ == '__main__':
             SET_FULFILL_PRAYER: [
                 MessageHandler(
                     filters.TEXT & ~(filters.COMMAND | filters.Regex("^EXIT$")),
-                    check_input_completeprayer,
-                )
-            ],
-            FULFILL_PRAYER: [
-                MessageHandler(
-                    filters.TEXT & ~(filters.COMMAND | filters.Regex("^EXIT$")),
-                    addprayer,
+                    check_input_fulfillprayer,
                 )
             ],
         },
