@@ -41,22 +41,28 @@ TYPING_PRAYER_TITLE, TYPING_PRAYER, NEXT_PRAYER, \
     COMPLETE_PRAYER, \
     FULFILL_PRAYER, \
     ADD_FULFILL_PRAYER, SET_FULFILL_PRAYER, \
-    EDIT_PRAYER, \
-    DEL_PRAYER = range(9)
+    DEL_PRAYER = range(8)
 # ------------------------------------------------------------------------------
 # Display functions
 # ------------------------------------------------------------------------------
 async def showalluntrackedprayer(update, context):
-    """Usage: /showalluntrackedprayer"""
+    """
+    Usage: /showalluntrackedprayer
+    Show all untracked prayer (ongoing and value == "")
+    """
+    untracked = {k:v for k,v in context.chat_data["ongoing"].items() if not v}
     text = '\n'.join(
-        "{}: {}".format(k, v) for k, v in context.chat_data["ongoing"].items()
+        "{}".format(k) for k, v in untracked.items()
     )
     if text == '':
         text = 'No prayer requests! Are you slacking?'
     await update.message.reply_text(text)
 
 async def showprayer(update, context):
-    """Usage: /showprayer"""
+    """
+    Usage: /showprayer
+    Show all prayer (untracked and completed)
+    """
     new_list = context.chat_data["ongoing"].items()
     text = '\n'.join(
         # "{}: {}".format(k, v) for k, v in context.chat_data["ongoing"].items()
@@ -67,12 +73,15 @@ async def showprayer(update, context):
     await update.message.reply_text(text)
 
 async def showcompletedprayer(update, context):
-    """Usage: /showcompletedprayer"""
-    new_list = context.chat_data["ongoing"] #for key, value in context.chat_data["ongoing"]:
+    """
+    Usage: /showcompletedprayer
+    Show all completed prayer (ongoing and value that is not empty)
+    """
+    completed = {k:v for k,v in context.chat_data["ongoing"].items() if v}
     await update.message.reply_text(
         '\n'.join(
             # "{}: {}".format(k, v) for k, v in context.chat_data["ongoing"].items()
-            "{}: {}".format(k, v) for k, v in new_list
+            "{}: {}".format(k, v) for k, v in completed.items()
             )
         )
 
@@ -209,19 +218,21 @@ async def addfulfillprayer(update, context):
 # ------------------------------------------------------------------------------
 # edit prayer
 # ------------------------------------------------------------------------------
-async def input_editprayer(update, context):
-    return EDIT_PRAYER
+# TODO: COMMENTING THIS PART OUT AS EDITING IS MORE COMPLEX
+# TO EDIT, DELETE THEN ADD AGAIN
+# async def input_editprayer(update, context):
+#     return EDIT_PRAYER
 
-async def editprayer(update, context):
-    """Usage: /editprayer key prayer_request_by_user"""
-    list_name = "ongoing" # default left as ongoing for now
-    prayer_title = context.user_data["prayer_title"]
-    value = context.chat_data[list_name].get(prayer_title)
-    reply = 'Prayer point could not be found'
-    if value:
-        context.chat_data[list_name][prayer_title] = str(update.message.text.split(' ', 2)[-1])
-        reply = 'Changes have been saved'
-    await update.message.reply_text(reply)
+# async def editprayer(update, context):
+#     """Usage: /editprayer key prayer_request_by_user"""
+#     list_name = "ongoing" # default left as ongoing for now
+#     prayer_title = context.user_data["prayer_title"]
+#     value = context.chat_data[list_name].get(prayer_title)
+#     reply = 'Prayer point could not be found'
+#     if value:
+#         context.chat_data[list_name][prayer_title] = str(update.message.text.split(' ', 2)[-1])
+#         reply = 'Changes have been saved'
+#     await update.message.reply_text(reply)
 
 # ------------------------------------------------------------------------------
 # delete prayer
@@ -261,14 +272,14 @@ async def help(update, context):
 Here are the following commands:
 /help - prints the list of available commands and what they do
 /addprayer - add a prayer to the prayer request list
-/editprayer - edit a prayer to the prayer request list at specified prayer title
 /delprayer - delete a prayer to the prayer request list at specified prayer title
 /completeprayer - you have prayed this, and add prayer to the prayer title
 /fulfillprayer - prayers that have been answered
 /addfulfillprayer - add answered prayer to prayer list directly
 /showprayer - show current prayer list
-/showcompletedprayer - show completed prayer list
 /showvictory - show fulfilled prayer list
+
+Be sure to reply the messages sent by the bot when you are in a group!
     """
     await context.bot.send_message(chat_id=update.effective_chat.id, text=help_text)
 async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -409,23 +420,23 @@ if __name__ == '__main__':
         },
         fallbacks=[MessageHandler(filters.Regex("^EXIT$"), end_convo)],
     )
-    editprayer_conv_handler = ConversationHandler(
-        entry_points=[
-            CommandHandler(
-                "editprayer", 
-                input_editprayer
-            )
-        ],
-        states={
-            EDIT_PRAYER: [
-                MessageHandler(
-                    filters.TEXT & ~(filters.COMMAND | filters.Regex("^EXIT$")),
-                    editprayer,
-                )
-            ],
-        },
-        fallbacks=[MessageHandler(filters.Regex("^EXIT$"), end_convo)],
-    )
+    # editprayer_conv_handler = ConversationHandler(
+    #     entry_points=[
+    #         CommandHandler(
+    #             "editprayer", 
+    #             input_editprayer
+    #         )
+    #     ],
+    #     states={
+    #         EDIT_PRAYER: [
+    #             MessageHandler(
+    #                 filters.TEXT & ~(filters.COMMAND | filters.Regex("^EXIT$")),
+    #                 editprayer,
+    #             )
+    #         ],
+    #     },
+    #     fallbacks=[MessageHandler(filters.Regex("^EXIT$"), end_convo)],
+    # )
     delprayer_conv_handler = ConversationHandler(
         entry_points=[
             CommandHandler(
@@ -447,7 +458,7 @@ if __name__ == '__main__':
     application.add_handler(complete_conv_handler)
     application.add_handler(fulfill_conv_handler)
     application.add_handler(addfulfill_conv_handler)
-    application.add_handler(editprayer_conv_handler)
+    # application.add_handler(editprayer_conv_handler)
     application.add_handler(delprayer_conv_handler)
 
     # Handle all other commands that are not recognised
