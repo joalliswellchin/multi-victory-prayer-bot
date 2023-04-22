@@ -20,6 +20,7 @@ Other notes:
 """
 
 from datetime import datetime
+import enum
 import logging
 import os
 from uuid import uuid4
@@ -53,7 +54,7 @@ async def showprayerrequest(update, context):
     """
     untracked = {k:v for k,v in context.chat_data["ongoing"].items() if not v}
     text = '\n'.join(
-        "{}".format(k) for k, v in untracked.items()
+        "{}".format(k) for k, _ in untracked.items()
     )
     if text == '':
         text = 'No prayer requests! Are you slacking?'
@@ -65,13 +66,19 @@ async def showall(update, context):
     Show all prayer (untracked and completed)
     """
     new_list = context.chat_data["ongoing"].items()
-    text = '\n'.join(
-        # "{}: {}".format(k, v) for k, v in context.chat_data["ongoing"].items()
-        "{}: {}".format(k, v) for k, v in new_list
-    )
-    if text == '':
-        text = 'No prayer requests! Are you slacking?'
-    await update.message.reply_text(text)
+    reply = ""
+    for k, v in new_list:
+        v_list = "\n"
+        for index, prayer_v in enumerate(v):
+            v_list += "{}: {}\n".format(index + 1, prayer_v)
+        reply += "{} {}\n".format(k, v_list)
+    # reply = '\n'.join(
+    #     # "{}: {}".format(k, v) for k, v in context.chat_data["ongoing"].items()
+    #     "{}: {}".format(k, v) for k, v in new_list
+    # )
+    if reply == '':
+        reply = 'No prayer requests! Are you slacking?'
+    await update.message.reply_text(reply)
 
 async def showprayer(update, context):
     """
@@ -79,12 +86,17 @@ async def showprayer(update, context):
     Show all completed prayer (ongoing and value that is not empty)
     """
     completed = {k:v for k,v in context.chat_data["ongoing"].items() if v}
-    await update.message.reply_text(
-        '\n'.join(
-            # "{}: {}".format(k, v) for k, v in context.chat_data["ongoing"].items()
-            "{}: {}".format(k, v) for k, v in completed.items()
-            )
-        )
+    reply = ""
+    for k, v in completed.items():
+        v_list = "\n"
+        for index, prayer_v in enumerate(v):
+            v_list += "{}: {}\n".format(index + 1, prayer_v)
+        reply += "{} {}\n".format(k, v_list)
+    # reply = '\n'.join(
+    #     # "{}: {}".format(k, v) for k, v in context.chat_data["ongoing"].items()
+    #     "{}: {}".format(k, v) for k, v in completed.items()
+    # )
+    await update.message.reply_text(reply)
 
 # TODO: is a repeat of showprayer, can be made general
 async def showvictory(update, context):
@@ -292,14 +304,26 @@ async def input_delprayer(update, context):
         )
         context.user_data.clear()
         return ConversationHandler.END
+    elif len(context.chat_data["ongoing"][prayer_req]) == 0:
+        await update.message.reply_text(
+            "Prayer request has no prayers!",
+            reply_markup=ReplyKeyboardRemove(),
+        )
+        context.user_data.clear()
+        return ConversationHandler.END
     await update.message.reply_text(
         "Which prayer is it? Please provide the number",
         reply_markup=ReplyKeyboardRemove(),
     )
     # TODO: display this
-    # for index, value in enumerate(context.chat_data["ongoing"][prayer_req]):
-    #     display_index = index + 1
-    #     print("{}: {}".format(display_index, value))
+    reply = ""
+    for index, value in enumerate(context.chat_data["ongoing"][prayer_req]):
+        reply += "{}: {}\n".format(index + 1, value)
+    if not reply == "":
+        await update.message.reply_text(
+            reply,
+            reply_markup=ReplyKeyboardRemove(),
+        )
     context.user_data["del_prayer_req"] = update.message.text #store this for continuing
     return TYPING_DEL_PRAYER_INDEX
 
