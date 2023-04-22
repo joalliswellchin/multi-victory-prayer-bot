@@ -20,10 +20,8 @@ Other notes:
 """
 
 from datetime import datetime
-import enum
 import logging
 import os
-from uuid import uuid4
 
 from dotenv import load_dotenv
 from telegram import Update, ReplyKeyboardRemove, ReplyKeyboardMarkup
