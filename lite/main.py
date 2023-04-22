@@ -2,21 +2,21 @@
 Data structures:
 context.chatdata = {
     "ongoing": {
-        "title": [str]
+        "req": [str]
     },
     "fulfilled": {
-        "title": [str]
+        "req": [str]
     }
 }
 context.userdata = {
-    "prayer_title": str
+    "prayer_req": str
 }
 
 Other notes:
-- Completed prayers are prayers with prayer titles and prayer not blank
+- Completed prayers are prayers with prayer requests and prayer not blank
 - Placing all in one file to make this easier for copy pasta as of now
-- Not building prayer titles editing because it should be intended to delete over editing
-- Not building 1 prayer title : M prayer, but will consider doing so as it is a valid use case
+- Not building prayer requests editing because it should be intended to delete over editing
+- Not building 1 prayer request : M prayer, but will consider doing so as it is a valid use case
 """
 
 from datetime import datetime
@@ -37,17 +37,18 @@ logging.basicConfig(
 load_dotenv()
 
 # Add prayer, complete prayer, fulfill prayer, edit prayer, delete prayer
-TYPING_PRAYER_TITLE, TYPING_PRAYER, NEXT_PRAYER, \
+TYPING_PRAYER_REQ, TYPING_PRAYER, NEXT_PRAYER, \
     COMPLETE_PRAYER, \
     FULFILL_PRAYER, \
     ADD_FULFILL_PRAYER, SET_FULFILL_PRAYER, \
-    DEL_PRAYER = range(8)
+    CHOOSE_DEL_PRAYER, TYPING_DEL_PRAYER_PRAYERREQ, TYPING_DEL_PRAYER_REQ, \
+    TYPING_DEL_PRAYER_INDEX = range(11)
 # ------------------------------------------------------------------------------
 # Display functions
 # ------------------------------------------------------------------------------
-async def showalluntrackedprayer(update, context):
+async def showprayerrequest(update, context):
     """
-    Usage: /showalluntrackedprayer
+    Usage: /shownullprayerrequest
     Show all untracked prayer (ongoing and value == "")
     """
     untracked = {k:v for k,v in context.chat_data["ongoing"].items() if not v}
@@ -58,9 +59,9 @@ async def showalluntrackedprayer(update, context):
         text = 'No prayer requests! Are you slacking?'
     await update.message.reply_text(text)
 
-async def showprayer(update, context):
+async def showall(update, context):
     """
-    Usage: /showprayer
+    Usage: /showall
     Show all prayer (untracked and completed)
     """
     new_list = context.chat_data["ongoing"].items()
@@ -72,9 +73,9 @@ async def showprayer(update, context):
         text = 'No prayer requests! Are you slacking?'
     await update.message.reply_text(text)
 
-async def showcompletedprayer(update, context):
+async def showprayer(update, context):
     """
-    Usage: /showcompletedprayer
+    Usage: /showprayer
     Show all completed prayer (ongoing and value that is not empty)
     """
     completed = {k:v for k,v in context.chat_data["ongoing"].items() if v}
@@ -85,7 +86,7 @@ async def showcompletedprayer(update, context):
             )
         )
 
-# TODO: is a repeat of showcompletedprayer, can be made general
+# TODO: is a repeat of showprayer, can be made general
 async def showvictory(update, context):
     """Usage: /showvictory"""
     await update.message.reply_text(
@@ -97,29 +98,29 @@ async def showvictory(update, context):
 # ------------------------------------------------------------------------------
 # add prayer
 # ------------------------------------------------------------------------------
-async def input_prayer_title(update, context):
+async def input_prayer_req(update, context):
     """Usage: /addprayer"""
     # Generate ID by getting the last number and add 1
     await update.message.reply_text(
-        "What is the prayer title?",
+        "What is the prayer request?",
         reply_markup=ReplyKeyboardRemove(),
     )
-    return TYPING_PRAYER_TITLE
+    return TYPING_PRAYER_REQ
 
-async def input_prayer_title_response(update, context):
+async def check_input_prayer_req(update, context):
     if update.message.text in context.chat_data["ongoing"]:
         await update.message.reply_text(
-            "Prayer title already exists! Edit prayer or delete if you require",
+            "Prayer request already exists! Edit prayer or delete if you require",
             reply_markup=ReplyKeyboardRemove(),
         )
         context.user_data.clear()
         return ConversationHandler.END
     else:
         reply_keyboard = [["Yes", "Not now"]]
-        context.user_data["prayer_title"] = update.message.text #store this for continuing
+        context.user_data["prayer_req"] = update.message.text #store this for continuing
         context.chat_data["ongoing"][update.message.text] = list()
         await update.message.reply_text(
-            "Prayer title added. Would you like to continue adding a prayer?",
+            "Prayer request added. Would you like to continue adding a prayer?",
             reply_markup=ReplyKeyboardMarkup(
                 reply_keyboard, 
                 one_time_keyboard=True, 
@@ -128,7 +129,7 @@ async def input_prayer_title_response(update, context):
         )
         return NEXT_PRAYER
 
-async def completeprayer(update, context):
+async def complete_prayer_req(update, context):
     await update.message.reply_text(
         "What is the prayer?",
         reply_markup=ReplyKeyboardRemove(),
@@ -139,16 +140,16 @@ async def completeprayer(update, context):
 # add completed prayer
 # ------------------------------------------------------------------------------
 # this is to get context if not from addprayer
-async def input_completeprayer_title(update, context):
-    """Usage: /completeprayer"""
+async def input_complete_prayer_req(update, context):
+    """Usage: /complete_prayer_req"""
     await update.message.reply_text(
-        "What is the prayer title?",
+        "What is the prayer request?",
         reply_markup=ReplyKeyboardRemove(),
     )
     return COMPLETE_PRAYER
 
-async def check_input_completeprayer(update, context):
-    # uncomment if you only need 1 prayer per prayer title
+async def check_complete_prayer_req(update, context):
+    # uncomment if you only need 1 prayer per prayer request
     # if update.message.text in context.chat_data["ongoing"]:
     #     if context.chat_data["ongoing"][update.message.text]:
     #         await update.message.reply_text(
@@ -160,13 +161,13 @@ async def check_input_completeprayer(update, context):
     # else:
     if not update.message.text in context.chat_data["ongoing"]:
         await update.message.reply_text(
-            "Not able to find prayer title! Try checking your caps!",
+            "Not able to find prayer request! Try checking your caps!",
             reply_markup=ReplyKeyboardRemove(),
         )
         context.user_data.clear()
         return ConversationHandler.END
     # set current user data to hold the message first for append later
-    context.user_data["prayer_title"] = update.message.text
+    context.user_data["prayer_req"] = update.message.text
     await update.message.reply_text(
         "What is the prayer?",
         reply_markup=ReplyKeyboardRemove(),
@@ -179,23 +180,23 @@ async def check_input_completeprayer(update, context):
 async def input_fulfillprayer(update, context):
     """Usage: /fulfillprayer"""
     await update.message.reply_text(
-        "Which prayer title has been fulfilled?",
+        "Which prayer request has been fulfilled?",
         reply_markup=ReplyKeyboardRemove(),
     )
     return FULFILL_PRAYER
 
 async def check_input_fulfillprayer(update, context):
-    prayer_title = update.message.text
-    if not prayer_title in context.chat_data["ongoing"]:
+    prayer_req = update.message.text
+    if not prayer_req in context.chat_data["ongoing"]:
         await update.message.reply_text(
-            "Not able to find prayer title! Try checking your caps!",
+            "Not able to find prayer request! Try checking your caps!",
             reply_markup=ReplyKeyboardRemove(),
         )
         context.user_data.clear()
         return ConversationHandler.END
     now = datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
-    context.chat_data["fulfilled"][now + " - " + prayer_title] = context.chat_data["ongoing"][prayer_title]
-    context.chat_data["ongoing"].pop(prayer_title)
+    context.chat_data["fulfilled"][now + " - " + prayer_req] = context.chat_data["ongoing"][prayer_req]
+    context.chat_data["ongoing"].pop(prayer_req)
     await update.message.reply_text(
         "Prayer fulfilled! Yay!",
         reply_markup=ReplyKeyboardRemove(),
@@ -226,30 +227,100 @@ async def addfulfillprayer(update, context):
 # async def editprayer(update, context):
 #     """Usage: /editprayer key prayer_request_by_user"""
 #     list_name = "ongoing" # default left as ongoing for now
-#     prayer_title = context.user_data["prayer_title"]
-#     value = context.chat_data[list_name].get(prayer_title)
+#     prayer_req = context.user_data["prayer_req"]
+#     value = context.chat_data[list_name].get(prayer_req)
 #     reply = 'Prayer point could not be found'
 #     if value:
-#         context.chat_data[list_name][prayer_title] = str(update.message.text.split(' ', 2)[-1])
+#         context.chat_data[list_name][prayer_req] = str(update.message.text.split(' ', 2)[-1])
 #         reply = 'Changes have been saved'
 #     await update.message.reply_text(reply)
 
 # ------------------------------------------------------------------------------
 # delete prayer
 # ------------------------------------------------------------------------------
+async def choose_delprayer_mode(update, context):
+    reply_keyboard = [["Delete Prayer Request", "Delete Prayer in Prayer Request"]]
+    await update.message.reply_text(
+        "Do you want to remove a prayer request or prayer in a prayer request?",
+        reply_markup=ReplyKeyboardMarkup(
+            reply_keyboard, 
+            one_time_keyboard=True, 
+            input_field_placeholder="Delete prayer or request?"
+        ),
+    )
+    return CHOOSE_DEL_PRAYER
+
+# delete prayer in prayer req
+async def input_del_prayerreq(update, context):
+    await update.message.reply_text(
+        "What is the prayer request?",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+    return TYPING_DEL_PRAYER_REQ
+
+async def del_prayer_req(update, context):
+    prayer_req = update.message.text
+    if not prayer_req in context.chat_data["ongoing"]:
+        await update.message.reply_text(
+            "Not able to find prayer request! Try checking your caps!",
+            reply_markup=ReplyKeyboardRemove(),
+        )
+        context.user_data.clear()
+        return ConversationHandler.END
+    context.chat_data["ongoing"].pop(prayer_req)
+    await update.message.reply_text(
+        "Prayer request deleted!",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+    context.user_data.clear()
+    return ConversationHandler.END
+
+# delete prayer req
+async def input_delprayer_prayerreq(update, context):
+    await update.message.reply_text(
+        "What is the prayer request?",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+    return TYPING_DEL_PRAYER_PRAYERREQ
+
 async def input_delprayer(update, context):
-    return DEL_PRAYER
+    prayer_req = update.message.text
+    if not prayer_req in context.chat_data["ongoing"]:
+        await update.message.reply_text(
+            "Not able to find prayer request! Try checking your caps!",
+            reply_markup=ReplyKeyboardRemove(),
+        )
+        context.user_data.clear()
+        return ConversationHandler.END
+    await update.message.reply_text(
+        "Which prayer is it? Please provide the number",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+    # TODO: display this
+    # for index, value in enumerate(context.chat_data["ongoing"][prayer_req]):
+    #     display_index = index + 1
+    #     print("{}: {}".format(display_index, value))
+    context.user_data["del_prayer_req"] = update.message.text #store this for continuing
+    return TYPING_DEL_PRAYER_INDEX
 
 async def delprayer(update, context):
     """Usage: /delprayer key"""
-    list_name = "ongoing" # default left as ongoing for now
-    prayer_title = context.user_data["prayer_title"]
-    value = context.chat_data[list_name].get(prayer_title)
-    reply = 'Prayer point could not be found'
-    if value:
-        context.chat_data[list_name].pop(prayer_title)
-        reply = 'Deleted prayer'
-    await update.message.reply_text(reply)
+    # because actual numbers start from 1, we deduct the index to start from 0
+    index = int(update.message.text) - 1
+    if index >= len(context.chat_data["ongoing"][context.user_data["del_prayer_req"]]):
+        await update.message.reply_text(
+            "Option not available!",
+            reply_markup=ReplyKeyboardRemove(),
+        )
+        context.user_data.clear()
+        return ConversationHandler.END
+    del context.chat_data["ongoing"][context.user_data["del_prayer_req"]][index]
+    await update.message.reply_text(
+        "Deleted prayer point!",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+    context.user_data.clear()
+    return ConversationHandler.END
 
 # ------------------------------------------------------------------------------
 # general functions
@@ -272,11 +343,12 @@ async def help(update, context):
 Here are the following commands:
 /help - prints the list of available commands and what they do
 /addprayer - add a prayer to the prayer request list
-/delprayer - delete a prayer to the prayer request list at specified prayer title
-/completeprayer - you have prayed this, and add prayer to the prayer title
+/delprayer - delete a prayer to the prayer request list at specified prayer request
+/completeprayer - you have prayed this, and add prayer to the prayer request
 /fulfillprayer - prayers that have been answered
 /addfulfillprayer - add answered prayer to prayer list directly
-/showprayer - show current prayer list
+/showall - show current prayer list
+/shownullprayerrequest - show all current prayer requests
 /showvictory - show fulfilled prayer list
 
 Be sure to reply the messages sent by the bot when you are in a group!
@@ -289,13 +361,13 @@ async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 async def addprayer(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    prayer_title = context.user_data["prayer_title"]
-    context.chat_data["ongoing"][prayer_title].append(update.message.text)
+    prayer_req = context.user_data["prayer_req"]
+    context.chat_data["ongoing"][prayer_req].append(update.message.text)
     await update.message.reply_text(
         "Prayer added",# + context.args[0],
         reply_markup=ReplyKeyboardRemove(),
     )
-    del context.user_data["prayer_title"]
+    del context.user_data["prayer_req"]
     return ConversationHandler.END
 
 async def end_convo(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -304,8 +376,8 @@ async def end_convo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Ending Conversation!",
         reply_markup=ReplyKeyboardRemove(),
     )
-    if "prayer_title" in context.user_data:
-        del context.user_data["prayer_title"]
+    if "prayer_req" in context.user_data:
+        del context.user_data["prayer_req"]
     return ConversationHandler.END
 
 # ------------------------------------------------------------------------------
@@ -321,32 +393,32 @@ if __name__ == '__main__':
     # All commands added here
     start_handler = CommandHandler('start', start)
     help_cmd_handler = CommandHandler('help', help)
-    showalluntrackedprayer_cmd_handler = CommandHandler('showalluntrackedprayer', showalluntrackedprayer)
+    shownullprayerrequest_cmd_handler = CommandHandler('shownullprayerrequest', showprayerrequest)
+    showall_cmd_handler = CommandHandler('showall', showall)
     showprayer_cmd_handler = CommandHandler('showprayer', showprayer)
-    showcompletedprayer_cmd_handler = CommandHandler('showcompletedprayer', showcompletedprayer)
     showvictory_cmd_handler = CommandHandler('showvictory', showvictory)
     application.add_handler(start_handler)
     application.add_handler(help_cmd_handler)
-    application.add_handler(showalluntrackedprayer_cmd_handler)
+    application.add_handler(shownullprayerrequest_cmd_handler)
+    application.add_handler(showall_cmd_handler)
     application.add_handler(showprayer_cmd_handler)
-    application.add_handler(showcompletedprayer_cmd_handler)
     application.add_handler(showvictory_cmd_handler)
     
     # Allow commands to be also receivable in text
     # help_msg_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), help)
-    add_conv_handler = ConversationHandler(
-        entry_points=[CommandHandler("addprayer", input_prayer_title)],
+    prayerreq_conv_handler = ConversationHandler(
+        entry_points=[CommandHandler("addprayer", input_prayer_req)],
         states={
-            TYPING_PRAYER_TITLE: [
+            TYPING_PRAYER_REQ: [
                 MessageHandler(
                     filters.TEXT & ~(filters.COMMAND | filters.Regex("^EXIT$")),
-                    input_prayer_title_response,
+                    check_input_prayer_req,
                 )
             ],
             NEXT_PRAYER: [
                 MessageHandler(
                      filters.Regex("^(Yes)$"),
-                    completeprayer,
+                    complete_prayer_req,
                 ),
                 MessageHandler(
                      filters.Regex("^(Not now)$"),
@@ -362,18 +434,18 @@ if __name__ == '__main__':
         },
         fallbacks=[MessageHandler(filters.Regex("^EXIT$"), end_convo)],
     )
-    complete_conv_handler = ConversationHandler(
+    prayer_conv_handler = ConversationHandler(
         entry_points=[
             CommandHandler(
                 "completeprayer", 
-                input_completeprayer_title
+                input_complete_prayer_req
             )
         ],
         states={
             COMPLETE_PRAYER: [
                 MessageHandler(
                     filters.TEXT & ~(filters.COMMAND | filters.Regex("^EXIT$")),
-                    check_input_completeprayer,
+                    check_complete_prayer_req,
                 )
             ],
             TYPING_PRAYER: [
@@ -441,11 +513,33 @@ if __name__ == '__main__':
         entry_points=[
             CommandHandler(
                 "delprayer", 
-                input_delprayer
+                choose_delprayer_mode
             )
         ],
         states={
-            DEL_PRAYER: [
+            CHOOSE_DEL_PRAYER: [
+                MessageHandler(
+                     filters.Regex("^(Delete Prayer Request)$"),
+                    input_del_prayerreq,
+                ),
+                MessageHandler(
+                     filters.Regex("^(Delete Prayer in Prayer Request)$"),
+                    input_delprayer_prayerreq,
+                )
+            ],
+            TYPING_DEL_PRAYER_REQ: [
+                MessageHandler(
+                    filters.TEXT & ~(filters.COMMAND | filters.Regex("^EXIT$")),
+                    del_prayer_req,
+                )
+            ],
+            TYPING_DEL_PRAYER_PRAYERREQ: [
+                MessageHandler(
+                    filters.TEXT & ~(filters.COMMAND | filters.Regex("^EXIT$")),
+                    input_delprayer,
+                )
+            ],
+            TYPING_DEL_PRAYER_INDEX: [
                 MessageHandler(
                     filters.TEXT & ~(filters.COMMAND | filters.Regex("^EXIT$")),
                     delprayer,
@@ -454,8 +548,8 @@ if __name__ == '__main__':
         },
         fallbacks=[MessageHandler(filters.Regex("^EXIT$"), end_convo)],
     )
-    application.add_handler(add_conv_handler)
-    application.add_handler(complete_conv_handler)
+    application.add_handler(prayerreq_conv_handler)
+    application.add_handler(prayer_conv_handler)
     application.add_handler(fulfill_conv_handler)
     application.add_handler(addfulfill_conv_handler)
     # application.add_handler(editprayer_conv_handler)
