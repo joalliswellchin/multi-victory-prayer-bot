@@ -28,6 +28,8 @@ from telegram import Update, ReplyKeyboardRemove, ReplyKeyboardMarkup
 from telegram.ext import (filters, MessageHandler, ApplicationBuilder, 
 ContextTypes, CommandHandler, PicklePersistence, ConversationHandler)
 
+from telegram.constants import ParseMode
+
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
@@ -69,14 +71,14 @@ async def showall(update, context):
         v_list = "\n"
         for index, prayer_v in enumerate(v):
             v_list += "{}: {}\n".format(index + 1, prayer_v)
-        reply += "{} {}\n".format(k, v_list)
+        reply += "<b>{}</b> {}\n".format(k, v_list)
     # reply = '\n'.join(
     #     # "{}: {}".format(k, v) for k, v in context.chat_data["ongoing"].items()
     #     "{}: {}".format(k, v) for k, v in new_list
     # )
     if reply == '':
         reply = 'No prayer requests! Are you slacking?'
-    await update.message.reply_text(reply)
+    await update.message.reply_text(reply, parse_mode=ParseMode.HTML)
 
 async def showprayer(update, context):
     """
@@ -89,20 +91,28 @@ async def showprayer(update, context):
         v_list = "\n"
         for index, prayer_v in enumerate(v):
             v_list += "{}: {}\n".format(index + 1, prayer_v)
-        reply += "{} {}\n".format(k, v_list)
+        reply += "<b>{}</b> {}\n".format(k, v_list)
     # reply = '\n'.join(
     #     # "{}: {}".format(k, v) for k, v in context.chat_data["ongoing"].items()
     #     "{}: {}".format(k, v) for k, v in completed.items()
     # )
-    await update.message.reply_text(reply)
+    await update.message.reply_text(reply, parse_mode=ParseMode.HTML)
 
 # TODO: is a repeat of showprayer, can be made general
 async def showvictory(update, context):
     """Usage: /showvictory"""
+    reply = ""
+    for k, v in context.chat_data["fulfilled"].items():
+        v_list = "\n"
+        for index, prayer_v in enumerate(v):
+            v_list += "{}: {}\n".format(index + 1, prayer_v)
+        reply += "<b>{}</b> {}\n".format(k, v_list)
     await update.message.reply_text(
-        '\n'.join(
-            "{}: {}".format(k, v) for k, v in context.chat_data["fulfilled"].items()
-        )
+        reply, 
+        parse_mode=ParseMode.HTML,
+        # '\n'.join(
+        #     "{}: {}".format(k, v) for k, v in context.chat_data["fulfilled"].items()
+        # )
     )
 
 # ------------------------------------------------------------------------------
@@ -350,8 +360,10 @@ async def delprayer(update, context):
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # TODO: Fix bug where there the conversation is saved and can be viewed in another chat
     # set up data
-    context.chat_data["ongoing"] = dict()
-    context.chat_data["fulfilled"] = dict()
+    if not context.chat_data.get("ongoing"):
+        context.chat_data["ongoing"] = dict()
+    if not context.chat_data.get("fulfilled"):
+        context.chat_data["fulfilled"] = dict()
     intro = """
 Hi Prayer Warrior! Welcome to the MVP bot!
 
@@ -384,7 +396,9 @@ async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def addprayer(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     prayer_req = context.user_data["prayer_req"]
-    context.chat_data["ongoing"][prayer_req].append(update.message.text)
+    now = datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
+
+    context.chat_data["ongoing"][prayer_req].append(now + " - " + update.message.text)
     await update.message.reply_text(
         "Prayer added",# + context.args[0],
         reply_markup=ReplyKeyboardRemove(),
@@ -400,6 +414,8 @@ async def end_convo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     if "prayer_req" in context.user_data:
         del context.user_data["prayer_req"]
+    if "del_prayer_req" in context.user_data:
+        del context.user_data["del_prayer_req"]
     return ConversationHandler.END
 
 # ------------------------------------------------------------------------------
