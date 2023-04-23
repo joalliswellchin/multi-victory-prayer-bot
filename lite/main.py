@@ -24,9 +24,10 @@ import logging
 import os
 
 from dotenv import load_dotenv
-from telegram import Update, ReplyKeyboardRemove, ReplyKeyboardMarkup
+from telegram import Update, ReplyKeyboardRemove, ReplyKeyboardMarkup, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import (filters, MessageHandler, ApplicationBuilder, 
-ContextTypes, CommandHandler, PicklePersistence, ConversationHandler)
+ContextTypes, CommandHandler, PicklePersistence, ConversationHandler, 
+CallbackQueryHandler)
 
 from telegram.constants import ParseMode
 
@@ -47,9 +48,9 @@ TYPING_PRAYER_REQ, TYPING_PRAYER, NEXT_PRAYER, \
 # ------------------------------------------------------------------------------
 # Display functions
 # ------------------------------------------------------------------------------
-async def showprayerrequest(update, context):
+async def showunprayed(update, context):
     """
-    Usage: /shownullprayerrequest
+    Usage: /showunprayed
     Show all untracked prayer (ongoing and value == "")
     """
     untracked = {k:v for k,v in context.chat_data["ongoing"].items() if not v}
@@ -59,6 +60,36 @@ async def showprayerrequest(update, context):
     if text == '':
         text = 'No prayer requests! Are you slacking?'
     await update.message.reply_text(text)
+
+async def showprayerrequest(update, context):
+    """
+    Usage: /showprayerrequest
+    """
+    if len(context.chat_data["ongoing"].items()) == 0:
+        await update.message.reply_text('No prayer requests! Are you slacking?')
+        return ConversationHandler.END
+    inline_keyboard = [[InlineKeyboardButton(k, callback_data=k) for k,_ in context.chat_data["ongoing"].items()]]
+    await update.message.reply_text(
+        "Which prayer request you want to show?",
+        reply_markup=InlineKeyboardMarkup(
+            inline_keyboard
+        ),
+    )
+
+async def showprayerrequest_prayers(update, context):
+    """
+    Shows prayers of prayer request
+    """
+    query = update.callback_query
+    await query.answer()
+    prayer_list = context.chat_data["ongoing"][query.data]
+    v_list = ""
+    for index, prayer_v in enumerate(prayer_list):
+        v_list += "{}: {}\n".format(index + 1, prayer_v)
+    if v_list == "":
+        v_list = "No prayer requests at the moment"
+    await query.edit_message_text(query.data)
+    await update.effective_chat.send_message(v_list)
 
 async def showall(update, context):
     """
@@ -80,9 +111,9 @@ async def showall(update, context):
         reply = 'No prayer requests! Are you slacking?'
     await update.message.reply_text(reply, parse_mode=ParseMode.HTML)
 
-async def showprayer(update, context):
+async def showprayed(update, context):
     """
-    Usage: /showprayer
+    Usage: /showprayed
     Show all completed prayer (ongoing and value that is not empty)
     """
     completed = {k:v for k,v in context.chat_data["ongoing"].items() if v}
@@ -98,7 +129,6 @@ async def showprayer(update, context):
     # )
     await update.message.reply_text(reply, parse_mode=ParseMode.HTML)
 
-# TODO: is a repeat of showprayer, can be made general
 async def showvictory(update, context):
     """Usage: /showvictory"""
     reply = ""
@@ -385,7 +415,9 @@ Here are the following commands:
 /fulfillprayer - prayers that have been answered
 /addfulfillprayer - add answered prayer to prayer list directly
 /showall - show current prayer list
-/shownullprayerrequest - show all current prayer requests
+/showprayerrequest - show the prayer request list to see just the prayers of that prayer request
+/showprayed - show all prayers that had a prayer
+/showunprayed - show all current prayer requests
 /showvictory - show fulfilled prayer list
 
 Be sure to reply the messages sent by the bot when you are in a group!
@@ -434,15 +466,18 @@ if __name__ == '__main__':
     # All commands added here
     start_handler = CommandHandler('start', start)
     help_cmd_handler = CommandHandler('help', help)
-    shownullprayerrequest_cmd_handler = CommandHandler('shownullprayerrequest', showprayerrequest)
+    showunprayed_cmd_handler = CommandHandler('showunprayed', showunprayed)
+    showprayerrequest_cmd_handler = CommandHandler('showprayerrequest', showprayerrequest)
     showall_cmd_handler = CommandHandler('showall', showall)
-    showprayer_cmd_handler = CommandHandler('showprayer', showprayer)
+    showprayed_cmd_handler = CommandHandler('showprayed', showprayed)
     showvictory_cmd_handler = CommandHandler('showvictory', showvictory)
     application.add_handler(start_handler)
     application.add_handler(help_cmd_handler)
-    application.add_handler(shownullprayerrequest_cmd_handler)
+    application.add_handler(showunprayed_cmd_handler)
+    application.add_handler(showprayerrequest_cmd_handler)
+    application.add_handler(CallbackQueryHandler(showprayerrequest_prayers))
     application.add_handler(showall_cmd_handler)
-    application.add_handler(showprayer_cmd_handler)
+    application.add_handler(showprayed_cmd_handler)
     application.add_handler(showvictory_cmd_handler)
     
     # Allow commands to be also receivable in text
