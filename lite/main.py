@@ -230,11 +230,14 @@ async def check_input_fulfillprayer(update, context):
 # ------------------------------------------------------------------------------
 async def input_addfulfillprayer(update, context):
     """Usage: /addfulfillprayer"""
-    await update.message.reply_text("")
+    await update.message.reply_text("What is the prayer that was answered?")
     return ADD_FULFILL_PRAYER
 
 async def addfulfillprayer(update, context):
-    await update.message.reply_text("")
+    answered_prayer = update.message.text
+    now = datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
+    context.chat_data["fulfilled"][now + " - " + answered_prayer] = list()
+    await update.message.reply_text("Added answered prayer!")
 
 # ------------------------------------------------------------------------------
 # edit prayer
