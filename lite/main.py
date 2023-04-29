@@ -14,9 +14,9 @@ context.userdata = {
 
 Other notes:
 - Completed prayers are prayers with prayer requests and prayer not blank
-- Placing all in one file to make this easier for copy pasta as of now
+- Placing all in one file to make this easier for copy pasta as of now (and other architecture mini-concerns)
 - Not building prayer requests editing because it should be intended to delete over editing
-- Not building 1 prayer request : M prayer, but will consider doing so as it is a valid use case
+- context.userdata is only for temporary data within a conversation
 """
 
 from datetime import datetime

@@ -13,6 +13,10 @@ local chat persistence (Using pickle file for now)
 For more information you can check these out:
 https://github.com/python-telegram-bot/python-telegram-bot/wiki/Making-your-bot-persistent
 
+Do take note that the lite version will eventually not be maintained as much as
+the full version. Additionally, earlier versions of lite will only contain 1
+main.py file as there were concerns to file upload limits from architecture.
+
 # How to set this up yourself to develop
 ## using full version
 1. clone/fork this repository or download its binaries
