@@ -427,12 +427,12 @@ Here are the following commands:
 /pray - you have prayed this, and add prayer to the prayer request
 /answered - prayers that have been answered
 /delete - delete a prayer to the prayer request list at specified prayer request
-/addfulfillprayer - add answered prayer to prayer list directly
-/showall - show current prayer list
-/showprayerrequest - show the prayer request list to see just the prayers of that prayer request
-/showprayed - show all prayers that had a prayer
-/showunprayed - show all current prayer requests
-/showvictory - show fulfilled prayer list
+/imanswered - add (immediately) answered prayer to answered prayer list directly
+/listall - show current prayer list
+/listadd - show all prayers that had a prayer
+/listrequest - show all current prayer requests
+/listanswered - show fulfilled prayer list
+/pickrequest - show the prayer request list to see just the prayers of that prayer request
 
 If you ever need to end the conversation you have with me, just type EXIT (case-sensitive)
 
@@ -494,11 +494,11 @@ if __name__ == '__main__':
     # All commands added here
     start_handler = CommandHandler('start', start)
     help_cmd_handler = CommandHandler('help', help)
-    showunprayed_cmd_handler = CommandHandler('showunprayed', showunprayed)
-    showprayerrequest_cmd_handler = CommandHandler('showprayerrequest', showprayerrequest)
-    showall_cmd_handler = CommandHandler('showall', showall)
-    showprayed_cmd_handler = CommandHandler('showprayed', showprayed)
-    showvictory_cmd_handler = CommandHandler('showvictory', showvictory)
+    showunprayed_cmd_handler = CommandHandler('listrequest', showunprayed)
+    showprayerrequest_cmd_handler = CommandHandler('pickrequest', showprayerrequest)
+    showall_cmd_handler = CommandHandler('listall', showall)
+    showprayed_cmd_handler = CommandHandler('listadd', showprayed)
+    showvictory_cmd_handler = CommandHandler('listanswered', showvictory)
     application.add_handler(start_handler)
     application.add_handler(help_cmd_handler)
     application.add_handler(showunprayed_cmd_handler)
@@ -582,7 +582,7 @@ if __name__ == '__main__':
     addfulfill_conv_handler = ConversationHandler(
         entry_points=[
             CommandHandler(
-                "addfulfillprayer", 
+                "imanswered", 
                 input_addfulfillprayer
             )
         ],
