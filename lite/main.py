@@ -54,12 +54,12 @@ async def showunprayed(update, context):
     Show all untracked prayer (ongoing and value == "")
     """
     untracked = {k:v for k,v in context.chat_data["ongoing"].items() if not v}
-    text = '\n'.join(
-        "{}".format(k) for k, _ in untracked.items()
+    text = '\n\n'.join(
+        "<b>{}</b>".format(k) for k, _ in untracked.items()
     )
     if text == '':
         text = 'No prayer requests! Are you slacking?'
-    await update.message.reply_text(text)
+    await update.message.reply_text(text, parse_mode=ParseMode.HTML)
 
 async def showprayerrequest(update, context):
     """
@@ -68,7 +68,19 @@ async def showprayerrequest(update, context):
     if len(context.chat_data["ongoing"].items()) == 0:
         await update.message.reply_text('No prayer requests! Are you slacking?')
         return ConversationHandler.END
-    inline_keyboard = [[InlineKeyboardButton(k, callback_data=k) for k,_ in context.chat_data["ongoing"].items()]]
+    # TODO: fix inline keyboard to have multiple rows
+    all_items = [InlineKeyboardButton(k, callback_data=k) for k,_ in context.chat_data["ongoing"].items()]
+    inline_keyboard = list()
+    row = list()
+    item_per_row = 3
+    for index, item in enumerate(all_items):
+        row.append(item)
+        if index % item_per_row == item_per_row - 1:
+            inline_keyboard.append(row)
+            row = list()
+    if len(row) > 0:
+        inline_keyboard.append(row)
+    # inline_keyboard = [[InlineKeyboardButton(k, callback_data=k) for k,_ in context.chat_data["ongoing"].items()]]
     await update.message.reply_text(
         "Which prayer request you want to show?",
         reply_markup=InlineKeyboardMarkup(
@@ -87,7 +99,7 @@ async def showprayerrequest_prayers(update, context):
     for index, prayer_v in enumerate(prayer_list):
         v_list += "{}: {}\n".format(index + 1, prayer_v)
     if v_list == "":
-        v_list = "No prayer requests at the moment"
+        v_list = "No prayers yet"
     await query.edit_message_text(query.data)
     await update.effective_chat.send_message(v_list)
 
@@ -100,6 +112,8 @@ async def showall(update, context):
     reply = ""
     for k, v in new_list:
         v_list = "\n"
+        if len(v) == 0:
+            v_list += "<i>Not prayed yet</i>\n"
         for index, prayer_v in enumerate(v):
             v_list += "{}: {}\n".format(index + 1, prayer_v)
         reply += "<b>{}</b> {}\n".format(k, v_list)
@@ -409,16 +423,18 @@ async def help(update, context):
     help_text = """
 Here are the following commands:
 /help - prints the list of available commands and what they do
-/addprayer - add a prayer to the prayer request list
-/delprayer - delete a prayer to the prayer request list at specified prayer request
-/completeprayer - you have prayed this, and add prayer to the prayer request
-/fulfillprayer - prayers that have been answered
+/request - add a prayer to the prayer request list
+/pray - you have prayed this, and add prayer to the prayer request
+/answered - prayers that have been answered
+/delete - delete a prayer to the prayer request list at specified prayer request
 /addfulfillprayer - add answered prayer to prayer list directly
 /showall - show current prayer list
 /showprayerrequest - show the prayer request list to see just the prayers of that prayer request
 /showprayed - show all prayers that had a prayer
 /showunprayed - show all current prayer requests
 /showvictory - show fulfilled prayer list
+
+If you ever need to end the conversation you have with me, just type EXIT (case-sensitive)
 
 Be sure to reply the messages sent by the bot when you are in a group!
     """
@@ -445,6 +461,18 @@ async def end_convo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Display the gathered info and end the conversation."""
     await update.message.reply_text(
         "Ending Conversation!",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+    if "prayer_req" in context.user_data:
+        del context.user_data["prayer_req"]
+    if "del_prayer_req" in context.user_data:
+        del context.user_data["del_prayer_req"]
+    return ConversationHandler.END
+
+async def end_request_convo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Display the gathered info and end the conversation."""
+    await update.message.reply_text(
+        "Okay! Remember to pray about it!",
         reply_markup=ReplyKeyboardRemove(),
     )
     if "prayer_req" in context.user_data:
@@ -483,7 +511,7 @@ if __name__ == '__main__':
     # Allow commands to be also receivable in text
     # help_msg_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), help)
     prayerreq_conv_handler = ConversationHandler(
-        entry_points=[CommandHandler("addprayer", input_prayer_req)],
+        entry_points=[CommandHandler("request", input_prayer_req)],
         states={
             TYPING_PRAYER_REQ: [
                 MessageHandler(
@@ -498,7 +526,7 @@ if __name__ == '__main__':
                 ),
                 MessageHandler(
                      filters.Regex("^(Not now)$"),
-                    end_convo,
+                    end_request_convo,
                 )
             ],
             TYPING_PRAYER: [
@@ -513,7 +541,7 @@ if __name__ == '__main__':
     prayer_conv_handler = ConversationHandler(
         entry_points=[
             CommandHandler(
-                "completeprayer", 
+                "pray", 
                 input_complete_prayer_req
             )
         ],
@@ -537,7 +565,7 @@ if __name__ == '__main__':
     fulfill_conv_handler = ConversationHandler(
         entry_points=[
             CommandHandler(
-                "fulfillprayer", 
+                "answered", 
                 input_fulfillprayer
             )
         ],
@@ -588,7 +616,7 @@ if __name__ == '__main__':
     delprayer_conv_handler = ConversationHandler(
         entry_points=[
             CommandHandler(
-                "delprayer", 
+                "delete", 
                 choose_delprayer_mode
             )
         ],
