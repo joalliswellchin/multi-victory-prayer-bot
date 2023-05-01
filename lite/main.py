@@ -423,15 +423,15 @@ async def help(update, context):
     help_text = """
 Here are the following commands:
 /help - prints the list of available commands and what they do
-/request - add a prayer to the prayer request list
+/request - add a prayer request
 /pray - you have prayed this, and add prayer to the prayer request
 /answered - prayers that have been answered
-/delete - delete a prayer to the prayer request list at specified prayer request
+/delete - delete a prayer request or prayer
 /imanswered - add (immediately) answered prayer to answered prayer list directly
-/listall - show current prayer list
-/listadd - show all prayers that had a prayer
-/listrequest - show all current prayer requests
-/listanswered - show fulfilled prayer list
+/listall - show the prayer request list
+/listrequest - show all prayer requests without prayers
+/listpray - show all prayer requests with prayers
+/listanswered - show the list of answered prayers
 /pickrequest - show the prayer request list to see just the prayers of that prayer request
 
 If you ever need to end the conversation you have with me, just type EXIT (case-sensitive)
@@ -497,7 +497,7 @@ if __name__ == '__main__':
     showunprayed_cmd_handler = CommandHandler('listrequest', showunprayed)
     showprayerrequest_cmd_handler = CommandHandler('pickrequest', showprayerrequest)
     showall_cmd_handler = CommandHandler('listall', showall)
-    showprayed_cmd_handler = CommandHandler('listadd', showprayed)
+    showprayed_cmd_handler = CommandHandler('listpray', showprayed)
     showvictory_cmd_handler = CommandHandler('listanswered', showvictory)
     application.add_handler(start_handler)
     application.add_handler(help_cmd_handler)
