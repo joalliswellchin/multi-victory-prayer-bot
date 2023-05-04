@@ -36,7 +36,7 @@ logging.basicConfig(
     level=logging.INFO
 )
 
-load_dotenv()
+load_dotenv(os.path.dirname(os.path.realpath(__file__)) + "/.env")
 
 # Add prayer, complete prayer, fulfill prayer, edit prayer, delete prayer
 TYPING_PRAYER_REQ, TYPING_PRAYER, NEXT_PRAYER, \
@@ -488,7 +488,10 @@ if __name__ == '__main__':
     # application = ApplicationBuilder().token(os.environ["TELEGRAM_API_KEY"]).build()
 
     # Create application with pickle file reference and pass it to bot token
-    persistence = PicklePersistence(filepath="saved_convo", single_file=False)
+    persistence = PicklePersistence(
+        filepath=os.path.dirname(os.path.realpath(__file__)) + "/assets/saved_convo", 
+        single_file=False,
+    )
     application = ApplicationBuilder().token(os.environ["TELEGRAM_API_KEY"]).persistence(persistence).build()
     
     # All commands added here

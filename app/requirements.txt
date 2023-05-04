@@ -1,0 +1,4 @@
+python-telegram-bot==20.1
+python-dotenv==1.0.0
+aws-cdk-lib==2.77.0
+awscli==1.27.125

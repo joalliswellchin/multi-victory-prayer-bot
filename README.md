@@ -18,24 +18,31 @@ the full version. Additionally, earlier versions of lite will only contain 1
 main.py file as there were concerns to file upload limits from architecture.
 
 # How to set this up yourself to develop
-## using full version
+Note that because these is written to be more non-developer friendly, feel free
+to skip steps you find repeated
+
 1. clone/fork this repository or download its binaries
-2. change directory to full
-3. run the following:
+2. change directory to app
+3. run the following: (Note that venv is optional)
 ```
-touch .env
+cp sample_env.txt .env
+python -m venv venv
+. venv/bin/activate
 pip install -r requirements.txt
-python main.py
 ```
-## using lite version
-1. clone/fork this repository or download its binaries
-2. change directory to lite
-3. run the following:
-```
-touch .env
-pip install -r requirements.txt
-python main.py
-```
+
+4. Installing pip should have also installed aws cli, be sure to follow up on this set up
+    - Sign in to the AWS Management Console and navigate to the AWS IAM service.
+    - Create a new IAM user or use an existing one.
+    - Attach the necessary IAM policies to the user to allow them to deploy infrastructure with the AWS CDK. You can find a list of recommended IAM policies for the AWS CDK in the AWS CDK documentation.
+    - Generate an access key and secret access key for the IAM user.
+    - Run `aws configure` and fill in the access and secret key
+5. Verify that your AWS credentials are correctly configured by running `aws sts get-caller-identity`
+6. Go to BotFather on telegram and generate an API key for your bot. Type /newbot and follow the instructions to get the API key
+7. Fill in .env with the telegram API key
+
+Other notables after setting up the app
+1. As I only cover the app for now, some other things you can do is to add the list of commands on /help to /setcommands on botfather
 
 # How to use this application
 Check out the wiki here: https://github.com/joalliswellchin/multi-victory-prayer-bot/wiki 
