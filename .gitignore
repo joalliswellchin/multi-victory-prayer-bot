@@ -131,4 +131,4 @@ dmypy.json
 # conversation saved on lite mode
 *saved_convo*
 
-.zip
+*.zip
