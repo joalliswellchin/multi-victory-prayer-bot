@@ -6,12 +6,17 @@
 from constructs import Construct
 from aws_cdk import aws_lambda as _lambda
 from aws_cdk import aws_apigateway as apigw
-import aws_cdk as core
+from aws_cdk import App, Stack
+from aws_cdk.aws_iam import Effect, PolicyStatement
+
+import boto3
+import botocore
 
 from zipfile import ZipFile
 import os
+import json
 
-class MyStack(core.Stack):
+class MVPBotStack(Stack):
     
     def __init__(self, scope: Construct, id: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
@@ -70,6 +75,45 @@ class MyStack(core.Stack):
             apigw.LambdaIntegration(handler),
         )
 
-app = core.App()
-MyStack(app, 'MyStack')
-app.synth()
+
+# Steps to create a cloudformation json
+print("Initializing App... ")
+app = App()
+print("App ready")
+print("Creating MVPBotStack... ")
+stack_name = "MVPBotStack"
+stack = MVPBotStack(app, stack_name)
+print("MVPBotStack ready")
+print("Creating Cloud Assembly for CloudFormation... ")
+cloud_assembly = app.synth()
+template = cloud_assembly.get_stack_by_name(stack.stack_name).template
+print("CloudFormation ready")
+
+# Write CloudFormation template to file
+print("Writing mvp_bot_cloudformation... ")
+with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), "mvp_bot_cloudformation.json"), "w") as f:
+    f.write(json.dumps(template, indent=4))
+print("mvp_bot_cloudformation created")
+
+# Read the CloudFormation template and send to AWS
+# Get credentials
+print("Getting botocore info... ")
+bc_session = botocore.session.get_session()
+access_key = bc_session.get_credentials().access_key
+secret_key = bc_session.get_credentials().secret_key
+region = bc_session.get_config_variable('region')
+# Create a boto3 session with credentials
+print("Creating boto3 session... ")
+session = boto3.Session(
+    aws_access_key_id=access_key,
+    aws_secret_access_key=secret_key,
+    region_name=region
+)
+
+# Use the session to create a client for the desired AWS service
+print("Creating CloudFormation... ")
+cloudformation_client = session.client("cloudformation")
+cloudformation_client.create_stack(
+    StackName=stack_name,
+    TemplateBody=json.dumps(template),
+)

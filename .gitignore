@@ -131,4 +131,6 @@ dmypy.json
 # conversation saved on lite mode
 *saved_convo*
 
+# app specific ignore
 *.zip
+mvp_bot_cloudformation.json
