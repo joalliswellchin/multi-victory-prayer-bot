@@ -1,9 +1,6 @@
-# from aws_cdk import (
-#     aws_lambda as _lambda,
-#     aws_apigateway as apigw,
-#     core,
-# )
+# THIS FILE USES CDK TO GENERATE AND DEPLOY CLOUDFORMATION
 from constructs import Construct
+from aws_cdk import aws_s3 as _s3
 from aws_cdk import aws_lambda as _lambda
 from aws_cdk import aws_apigateway as apigw
 from aws_cdk import App, Stack
@@ -15,6 +12,7 @@ import botocore
 from zipfile import ZipFile
 import os
 import json
+from dotenv import load_dotenv
 
 class MVPBotStack(Stack):
     
@@ -23,7 +21,8 @@ class MVPBotStack(Stack):
         
         # delete if zip file exists
         file_dir = os.path.dirname(os.path.realpath(__file__))
-        zip_file_name = os.path.join(file_dir, 'lambda.zip')
+        file_name = 'lambda.zip'
+        zip_file_name = os.path.join(file_dir, file_name)
         try:
             print("removing old zip file...")
             os.remove(zip_file_name)
@@ -110,10 +109,29 @@ session = boto3.Session(
     region_name=region
 )
 
+
+# Create s3
+
+# Add SSM
+ssm = boto3.client('ssm')
+load_dotenv(os.getcwd() + "/.env")
+print(os.getcwd() + "/.env")
+ssm_id = os.environ["SSM_ID"]
+print(f'/cdk-bootstrap/{ssm_id}/version')
+ssm.put_parameter(
+    Name=f'/cdk-bootstrap/{ssm_id}/version',
+    Value='6',
+    Type='String',
+    Overwrite=True
+)
+
 # Use the session to create a client for the desired AWS service
 print("Creating CloudFormation... ")
 cloudformation_client = session.client("cloudformation")
 cloudformation_client.create_stack(
     StackName=stack_name,
     TemplateBody=json.dumps(template),
+    Capabilities=[
+        'CAPABILITY_NAMED_IAM'
+    ],
 )
