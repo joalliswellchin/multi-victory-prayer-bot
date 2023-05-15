@@ -43,11 +43,17 @@ logging.basicConfig(
 
 load_dotenv(os.path.dirname(os.path.realpath(__file__)) + "/.env")
 
+# ------------------------------------------------------------------------------
+# AWS Lambda Main function
+# ------------------------------------------------------------------------------
+import asyncio
+import json
+from telegram import Update
+def lambda_handler(event, context):
+    return asyncio.get_event_loop().run_until_complete(main_lambda(event, context))
 
-# ------------------------------------------------------------------------------
-# Main function
-# ------------------------------------------------------------------------------
-if __name__ == '__main__':
+
+async def main_lambda(event, context):
     # application = ApplicationBuilder().token(os.environ["TELEGRAM_API_KEY"]).build()
 
     # Create application with pickle file reference and pass it to bot token
@@ -212,3 +218,20 @@ if __name__ == '__main__':
     unknown_handler = MessageHandler(filters.COMMAND, common.unknown)
     application.add_handler(unknown_handler)
     application.run_polling()
+
+    try:    
+        await application.initialize()
+        await application.process_update(
+            Update.de_json(json.loads(event["body"]), application.bot)
+        )
+    
+        return {
+            'statusCode': 200,
+            'body': 'Success'
+        }
+
+    except Exception as exc:
+        return {
+            'statusCode': 500,
+            'body': 'Failure'
+        }

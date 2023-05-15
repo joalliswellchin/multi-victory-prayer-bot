@@ -134,3 +134,5 @@ dmypy.json
 # app specific ignore
 *.zip
 mvp_bot_cloudformation.json
+cdk.json
+cdk.out
