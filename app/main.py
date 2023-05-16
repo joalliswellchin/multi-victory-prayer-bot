@@ -23,6 +23,10 @@ from datetime import datetime
 import logging
 import os
 
+from dotenv import load_dotenv
+load_dotenv(os.path.dirname(os.path.realpath(__file__)) + "/.env")
+
+# import mongodb_conn as conn
 import constants
 import list_prayer
 import request_prayer
@@ -31,31 +35,62 @@ import delete_prayer
 import answered
 import common
 
-from dotenv import load_dotenv
 from telegram.ext import (filters, MessageHandler, ApplicationBuilder, 
 CommandHandler, PicklePersistence, ConversationHandler, 
 CallbackQueryHandler)
+
+from mongopersistence import MongoPersistence
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
 
-load_dotenv(os.path.dirname(os.path.realpath(__file__)) + "/.env")
 
 
 # ------------------------------------------------------------------------------
 # Main function
 # ------------------------------------------------------------------------------
 if __name__ == '__main__':
-    # application = ApplicationBuilder().token(os.environ["TELEGRAM_API_KEY"]).build()
+    # Default for LOCAL and any other env
+    application = ApplicationBuilder().token(os.environ["TELEGRAM_API_KEY"]).build()
 
     # Create application with pickle file reference and pass it to bot token
-    persistence = PicklePersistence(
-        filepath=os.path.dirname(os.path.realpath(__file__)) + "/assets/saved_convo", 
-        single_file=False,
-    )
-    application = ApplicationBuilder().token(os.environ["TELEGRAM_API_KEY"]).persistence(persistence).build()
+    if os.environ["ENV"] == "UAT":
+        # TODO: Set up for UAT
+        print("UAT not available")
+    elif os.environ["ENV"] == "PROD":
+        # TODO: Set up for PROD
+        print("PROD not available")
+    elif os.environ["ENV"] == "LOCAL" and os.environ["DB_ENV"] == "LOCAL_FILE":
+        persistence = PicklePersistence(
+            filepath=os.path.dirname(os.path.realpath(__file__)) + "/assets/saved_convo", 
+            single_file=False,
+        )
+        application = ApplicationBuilder().token(os.environ["TELEGRAM_API_KEY"]).persistence(persistence).build()
+    elif os.environ["ENV"] == "LOCAL" and os.environ["DB_ENV"] == "MONGO":
+        application = ApplicationBuilder().token(os.environ["TELEGRAM_API_KEY"]).build()
+        # conn.client
+    elif os.environ["ENV"] == "LOCAL" and os.environ["DB_ENV"] == "MONGO_PERSIST":
+        MONGODB_USER = os.environ["MONGODB_USER"]
+        MONGODB_PWD = os.environ["MONGODB_PWD"]
+        MONGODB_CLUSTER = os.environ["MONGODB_CLUSTER"]
+        # uri = "mongodb://username:password@your-ip:27017/"
+        uri = f"mongodb+srv://{MONGODB_USER}:{MONGODB_PWD}@{MONGODB_CLUSTER}.dnv17te.mongodb.net/?retryWrites=true&w=majority"
+        persistence = MongoPersistence(
+            mongo_url=uri,
+            db_name=os.environ["MONGODB_DBNAME"],
+            name_col_user_data=os.environ["MONGODB_USER_DATA"],  # optional
+            name_col_chat_data=os.environ["MONGODB_CHAT_DATA"],  # optional
+            name_col_bot_data=os.environ["MONGODB_BOT_DATA"],  # optional
+            name_col_conversations_data=os.environ["MONGODB_CONVO"],  # optional
+            create_col_if_not_exist=True,  # optional
+            # ignore_general_data=["cache"],
+            # ignore_user_data=["foo", "bar"],
+            load_on_flush=False, 
+            update_interval=int(os.environ.get("MONGODB_UPLOAD_INTERVAL","600"))
+        )
+        application = ApplicationBuilder().token(os.environ["TELEGRAM_API_KEY"]).persistence(persistence).build()
     
     # All commands added here
     start_handler = CommandHandler('start', common.start)

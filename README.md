@@ -31,7 +31,13 @@ python -m venv venv
 pip install -r requirements.txt
 ```
 
-4. Installing pip should have also installed aws cli, be sure to follow up on this set up
+Other notables after setting up the app
+1. As I only cover the app for now, some other things you can do is to add the list of commands on /help to /setcommands on botfather
+
+# How to run the application
+
+## on AWS Lambda
+Installing pip should have also installed aws cli, be sure to follow up on this set up
     - Sign in to the AWS Management Console and navigate to the AWS IAM service.
     - Create a new IAM user or use an existing one.
     - Attach the necessary IAM policies to the user to allow them to deploy infrastructure with the AWS CDK. You can find a list of recommended IAM policies for the AWS CDK in the AWS CDK documentation.
@@ -41,8 +47,12 @@ pip install -r requirements.txt
 6. Go to BotFather on telegram and generate an API key for your bot. Type /newbot and follow the instructions to get the API key
 7. Fill in .env with the telegram API key
 
-Other notables after setting up the app
-1. As I only cover the app for now, some other things you can do is to add the list of commands on /help to /setcommands on botfather
+## on AWS instance and MongoDB
+1. Go to mongodb and create a cluster
+2. Fill in the information provided into .env (all those with prefix MONGO_)
+3. Create a new collection with MVPBot as the database and chat_data as the collection
+4. (Optional) create a screen `screen -S name_of_screen`
+5. Run `python main.py`
 
 # How to use this application
 Check out the wiki here: https://github.com/joalliswellchin/multi-victory-prayer-bot/wiki 
