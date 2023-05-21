@@ -67,8 +67,11 @@ for the uptime
 
 
 # How to contribute
--- this is still work in progress --
-You can raise an issue and a pull request (if you found a solution)
+If you have found an issue, you can raise an issue and a pull request (if you found a solution)
+Alternatively, check out the issues list and create a pull request
+
+# How else to support
+You can support me through donation on Ko-fi
 
 # APPENDIX
 ## Sample env file
