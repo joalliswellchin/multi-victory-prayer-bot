@@ -6,6 +6,7 @@ This bot can be used for your prayer journey
 The idea is to set this up and use this for your personal journeys and count
 your victories
 Check out the bot [here](https://t.me/MVPrayer_bot)
+Check out the [guide](https://github.com/joalliswellchin/multi-victory-prayer-bot/wiki) for how to use the telegram bot
 
 # How to set this up yourself to develop
 Note that because these is written to be more non-developer friendly, feel free
