@@ -136,3 +136,6 @@ dmypy.json
 mvp_bot_cloudformation.json
 cdk.json
 cdk.out
+
+# your own set up instructions
+my_setup.md
