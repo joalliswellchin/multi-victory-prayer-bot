@@ -78,6 +78,7 @@ async def showall(update, context):
             v_list += "{}: {}\n".format(index + 1, prayer_v)
         # check if it exceeds message length
         # if exceed add to replies and then reset
+        # NOTE: This is hardcoded value for now
         to_add = "<b>{}</b> {}\n".format(k, v_list)
         if len(prayer_info) + len(to_add) > 2000:
             replies.append(prayer_info)
