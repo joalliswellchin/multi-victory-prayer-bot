@@ -68,21 +68,35 @@ async def showall(update, context):
     Show all prayer (untracked and completed)
     """
     new_list = context.chat_data["ongoing"].items()
-    reply = ""
+    replies = []
+    prayer_info = ""
     for k, v in new_list:
         v_list = "\n"
         if len(v) == 0:
             v_list += "<i>Not prayed yet</i>\n"
         for index, prayer_v in enumerate(v):
             v_list += "{}: {}\n".format(index + 1, prayer_v)
-        reply += "<b>{}</b> {}\n".format(k, v_list)
+        # check if it exceeds message length
+        # if exceed add to replies and then reset
+        to_add = "<b>{}</b> {}\n".format(k, v_list)
+        if len(prayer_info) + len(to_add) > 2000:
+            replies.append(prayer_info)
+            prayer_info = to_add
+        else:
+            prayer_info += to_add
+    # ensure the last text is also added
+    replies.append(prayer_info)
+
+    # TODO: Remove this if no longer in use, this is previous prayer info format
     # reply = '\n'.join(
     #     # "{}: {}".format(k, v) for k, v in context.chat_data["ongoing"].items()
     #     "{}: {}".format(k, v) for k, v in new_list
     # )
-    if reply == '':
-        reply = 'No prayer requests! Are you slacking?'
-    await update.message.reply_text(reply, parse_mode=ParseMode.HTML)
+    # if reply == '':
+    #     reply = 'No prayer requests! Are you slacking?'
+
+    for reply in replies:
+        await update.message.reply_text(reply, parse_mode=ParseMode.HTML)
 
 async def showprayed(update, context):
     """
