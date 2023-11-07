@@ -92,7 +92,12 @@ logging.basicConfig(
 # ------------------------------------------------------------------------------
 if __name__ == "__main__":
     # Default for LOCAL and any other env
-    application = ApplicationBuilder().token(os.environ["TELEGRAM_API_KEY"]).build()
+    application = (
+        ApplicationBuilder()
+        .token(os.environ["TELEGRAM_API_KEY"])
+        .concurrent_updates(True)
+        .build()
+    )
 
     # Create application with pickle file reference and pass it to bot token
     if os.environ["ENV"] == "UAT":
@@ -110,6 +115,7 @@ if __name__ == "__main__":
         application = (
             ApplicationBuilder()
             .token(os.environ["TELEGRAM_API_KEY"])
+            .concurrent_updates(True)
             .persistence(persistence)
             .build()
         )
@@ -138,6 +144,7 @@ if __name__ == "__main__":
         application = (
             ApplicationBuilder()
             .token(os.environ["TELEGRAM_API_KEY"])
+            .concurrent_updates(True)
             .persistence(persistence)
             .build()
         )
