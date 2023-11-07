@@ -1,6 +1,6 @@
 """
 Data structures:
-context.chatdata = {
+context.chat_data = {
     "ongoing": {
         "req": [str]
     },
@@ -8,7 +8,40 @@ context.chatdata = {
         "req": [str]
     }
 }
-context.userdata = {
+context.user_data = {
+    "prayer_req": str
+}
+
+NEW DATA STRUCTURE:
+context.chat_data = {
+    "ongoing": {
+        "req": {
+            "prayers": [
+                {
+                    "prayer": str,
+                    "time": str,
+                }
+            ],
+            "req_time" str,
+            "tags": [str]
+        }
+    },
+    "fulfilled": {
+        "req": {
+            "prayers": [
+                {
+                    "prayer": str,
+                    "time": str,
+                }
+            ],
+            "req_time" str,
+            "fulfilled_time": str,
+            "tags": [str],
+        }
+    }
+    "tags": [str]
+}
+context.user_data = {
     "prayer_req": str
 }
 
@@ -24,6 +57,7 @@ import logging
 import os
 
 from dotenv import load_dotenv
+
 load_dotenv(os.path.dirname(os.path.realpath(__file__)) + "/.env")
 
 # import mongodb_conn as conn
@@ -35,23 +69,28 @@ import delete_prayer
 import answered
 import common
 
-from telegram.ext import (filters, MessageHandler, ApplicationBuilder, 
-CommandHandler, PicklePersistence, ConversationHandler, 
-CallbackQueryHandler)
+from telegram.ext import (
+    filters,
+    MessageHandler,
+    ApplicationBuilder,
+    CommandHandler,
+    PicklePersistence,
+    ConversationHandler,
+    CallbackQueryHandler,
+)
 
 from mongopersistence import MongoPersistence
 
 logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=logging.INFO,
 )
-
 
 
 # ------------------------------------------------------------------------------
 # Main function
 # ------------------------------------------------------------------------------
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Default for LOCAL and any other env
     application = ApplicationBuilder().token(os.environ["TELEGRAM_API_KEY"]).build()
 
@@ -64,10 +103,16 @@ if __name__ == '__main__':
         print("PROD not available")
     elif os.environ["ENV"] == "LOCAL" and os.environ["DB_ENV"] == "LOCAL_FILE":
         persistence = PicklePersistence(
-            filepath=os.path.dirname(os.path.realpath(__file__)) + "/assets/saved_convo", 
+            filepath=os.path.dirname(os.path.realpath(__file__))
+            + "/assets/saved_convo",
             single_file=False,
         )
-        application = ApplicationBuilder().token(os.environ["TELEGRAM_API_KEY"]).persistence(persistence).build()
+        application = (
+            ApplicationBuilder()
+            .token(os.environ["TELEGRAM_API_KEY"])
+            .persistence(persistence)
+            .build()
+        )
     elif os.environ["ENV"] == "LOCAL" and os.environ["DB_ENV"] == "MONGO":
         application = ApplicationBuilder().token(os.environ["TELEGRAM_API_KEY"]).build()
         # conn.client
@@ -87,28 +132,37 @@ if __name__ == '__main__':
             create_col_if_not_exist=True,  # optional
             # ignore_general_data=["cache"],
             # ignore_user_data=["foo", "bar"],
-            load_on_flush=False, 
-            update_interval=int(os.environ.get("MONGODB_UPLOAD_INTERVAL","600"))
+            load_on_flush=False,
+            update_interval=int(os.environ.get("MONGODB_UPLOAD_INTERVAL", "600")),
         )
-        application = ApplicationBuilder().token(os.environ["TELEGRAM_API_KEY"]).persistence(persistence).build()
-    
+        application = (
+            ApplicationBuilder()
+            .token(os.environ["TELEGRAM_API_KEY"])
+            .persistence(persistence)
+            .build()
+        )
+
     # All commands added here
-    start_handler = CommandHandler('start', common.start)
-    help_cmd_handler = CommandHandler('help', common.help)
-    showunprayed_cmd_handler = CommandHandler('listrequest', list_prayer.showunprayed)
-    showprayerrequest_cmd_handler = CommandHandler('pickrequest', list_prayer.showprayerrequest)
-    showall_cmd_handler = CommandHandler('listall', list_prayer.showall)
-    showprayed_cmd_handler = CommandHandler('listpray', list_prayer.showprayed)
-    showvictory_cmd_handler = CommandHandler('listanswered', list_prayer.showvictory)
+    start_handler = CommandHandler("start", common.start)
+    help_cmd_handler = CommandHandler("help", common.help)
+    showunprayed_cmd_handler = CommandHandler("listrequest", list_prayer.list_request)
+    showprayerrequest_cmd_handler = CommandHandler(
+        "pickrequest", list_prayer.pick_request
+    )
+    showall_cmd_handler = CommandHandler("listall", list_prayer.list_all)
+    showprayed_cmd_handler = CommandHandler("listpray", list_prayer.list_pray)
+    showvictory_cmd_handler = CommandHandler("listanswered", list_prayer.list_answered)
     application.add_handler(start_handler)
     application.add_handler(help_cmd_handler)
     application.add_handler(showunprayed_cmd_handler)
     application.add_handler(showprayerrequest_cmd_handler)
-    application.add_handler(CallbackQueryHandler(list_prayer.showprayerrequest_prayers))
+    application.add_handler(
+        CallbackQueryHandler(list_prayer.picked_request_prayer_list)
+    )  # this provides response for pick_request
     application.add_handler(showall_cmd_handler)
     application.add_handler(showprayed_cmd_handler)
     application.add_handler(showvictory_cmd_handler)
-    
+
     # Allow commands to be also receivable in text
     # help_msg_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), help)
     prayerreq_conv_handler = ConversationHandler(
@@ -122,13 +176,13 @@ if __name__ == '__main__':
             ],
             constants.NEXT_PRAYER: [
                 MessageHandler(
-                     filters.Regex("^(Yes)$"),
+                    filters.Regex("^(Yes)$"),
                     request_prayer.complete_prayer_req,
                 ),
                 MessageHandler(
-                     filters.Regex("^(Not now)$"),
+                    filters.Regex("^(Not now)$"),
                     common.end_request_convo,
-                )
+                ),
             ],
             constants.TYPING_PRAYER: [
                 MessageHandler(
@@ -140,12 +194,7 @@ if __name__ == '__main__':
         fallbacks=[MessageHandler(filters.Regex("^EXIT$"), common.end_convo)],
     )
     prayer_conv_handler = ConversationHandler(
-        entry_points=[
-            CommandHandler(
-                "pray", 
-                pray.input_complete_prayer_req
-            )
-        ],
+        entry_points=[CommandHandler("pray", pray.input_complete_prayer_req)],
         states={
             constants.COMPLETE_PRAYER: [
                 MessageHandler(
@@ -162,14 +211,8 @@ if __name__ == '__main__':
         },
         fallbacks=[MessageHandler(filters.Regex("^EXIT$"), common.end_convo)],
     )
-    #TODO: Complete these flow
     fulfill_conv_handler = ConversationHandler(
-        entry_points=[
-            CommandHandler(
-                "answered", 
-                answered.input_fulfillprayer
-            )
-        ],
+        entry_points=[CommandHandler("answered", answered.input_fulfillprayer)],
         states={
             constants.FULFILL_PRAYER: [
                 MessageHandler(
@@ -181,12 +224,7 @@ if __name__ == '__main__':
         fallbacks=[MessageHandler(filters.Regex("^EXIT$"), common.end_convo)],
     )
     addfulfill_conv_handler = ConversationHandler(
-        entry_points=[
-            CommandHandler(
-                "imanswered", 
-                answered.input_addfulfillprayer
-            )
-        ],
+        entry_points=[CommandHandler("imanswered", answered.input_addfulfillprayer)],
         states={
             constants.ADD_FULFILL_PRAYER: [
                 MessageHandler(
@@ -198,22 +236,17 @@ if __name__ == '__main__':
         fallbacks=[MessageHandler(filters.Regex("^EXIT$"), common.end_convo)],
     )
     delprayer_conv_handler = ConversationHandler(
-        entry_points=[
-            CommandHandler(
-                "delete", 
-                delete_prayer.choose_delprayer_mode
-            )
-        ],
+        entry_points=[CommandHandler("delete", delete_prayer.choose_delprayer_mode)],
         states={
             constants.CHOOSE_DEL_PRAYER: [
                 MessageHandler(
-                     filters.Regex("^(Delete Prayer Request)$"),
+                    filters.Regex("^(Delete Request)$"),
                     delete_prayer.input_del_prayerreq,
                 ),
                 MessageHandler(
-                     filters.Regex("^(Delete Prayer in Prayer Request)$"),
+                    filters.Regex("^(Delete Prayer in Request)$"),
                     delete_prayer.input_delprayer_prayerreq,
-                )
+                ),
             ],
             constants.TYPING_DEL_PRAYER_REQ: [
                 MessageHandler(
@@ -246,4 +279,6 @@ if __name__ == '__main__':
     # Handle all other commands that are not recognised
     unknown_handler = MessageHandler(filters.COMMAND, common.unknown)
     application.add_handler(unknown_handler)
+
+    # Convenient app starting function
     application.run_polling()

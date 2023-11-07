@@ -1,34 +1,58 @@
-import constants
+# import constants
+from func import text_concat
 
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ConversationHandler
 from telegram.constants import ParseMode
 
+
 # ------------------------------------------------------------------------------
 # Display functions
 # ------------------------------------------------------------------------------
-async def showunprayed(update, context):
+async def list_request(update, context):
     """
-    Usage: /showunprayed
-    Show all untracked prayer (ongoing and value == "")
-    """
-    untracked = {k:v for k,v in context.chat_data["ongoing"].items() if not v}
-    text = '\n\n'.join(
-        "<b>{}</b>".format(k) for k, _ in untracked.items()
-    )
-    if text == '':
-        text = 'No prayer requests! Are you slacking?'
-    await update.message.reply_text(text, parse_mode=ParseMode.HTML)
+    Usage: /listrequest
 
-async def showprayerrequest(update, context):
+    Show all prayer requests (ongoing and value == "")
     """
-    Usage: /showprayerrequest
+    # Get all prayer request without prayer
+    # prayer requests without prayer is ["prayers"] with only empty list
+    untracked = {
+        k: v
+        for k, v in context.chat_data["ongoing"].items()
+        if not len(v["prayers"]) > 0
+    }
+    replies = text_concat.create_request_list_text(untracked.items())
+
+    # If there is no prayer requests, show that different message
+    if len(replies) == 0:
+        text = "No prayer request! Go ask leh~"
+        await update.message.reply_text(text, parse_mode=ParseMode.HTML)
+    else:
+        for reply in replies:
+            await update.message.reply_text(reply, parse_mode=ParseMode.HTML)
+
+
+async def pick_request(update, context):
     """
+    Usage: /pickrequest
+
+    Show all prayer requests as a button
+    """
+    # Check if there is prayer requests
     if len(context.chat_data["ongoing"].items()) == 0:
-        await update.message.reply_text('No prayer requests! Are you slacking?')
+        await update.message.reply_text("No prayer requests! Go ask leh~")
         return ConversationHandler.END
-    # TODO: fix inline keyboard to have multiple rows
-    all_items = [InlineKeyboardButton(k, callback_data=k) for k,_ in context.chat_data["ongoing"].items()]
+
+    # TODO: fix inline keyboard to have previous and next buttons
+    # TODO: Change item_per_row to env and set it to 1, and change to items_to_display
+    # Get all requests and make them InlineKeyboardButton
+    all_items = [
+        InlineKeyboardButton(k, callback_data=k)
+        for k, _ in context.chat_data["ongoing"].items()
+    ]
+
+    # Form rows for display
     inline_keyboard = list()
     row = list()
     item_per_row = 3
@@ -37,98 +61,82 @@ async def showprayerrequest(update, context):
         if index % item_per_row == item_per_row - 1:
             inline_keyboard.append(row)
             row = list()
-    if len(row) > 0:
+    if len(row) > 0:  # add leftover of row to last row
         inline_keyboard.append(row)
-    # inline_keyboard = [[InlineKeyboardButton(k, callback_data=k) for k,_ in context.chat_data["ongoing"].items()]]
+
     await update.message.reply_text(
         "Which prayer request you want to show?",
-        reply_markup=InlineKeyboardMarkup(
-            inline_keyboard
-        ),
+        reply_markup=InlineKeyboardMarkup(inline_keyboard),
     )
 
-async def showprayerrequest_prayers(update, context):
+
+async def picked_request_prayer_list(update, context):
     """
-    Shows prayers of prayer request
+    Usage: None
+
+    Shows prayers of prayer request, after /pickrequest
     """
+    # Get selected InlineKeyboardButton
     query = update.callback_query
     await query.answer()
     prayer_list = context.chat_data["ongoing"][query.data]
-    v_list = ""
-    for index, prayer_v in enumerate(prayer_list):
-        v_list += "{}: {}\n".format(index + 1, prayer_v)
-    if v_list == "":
-        v_list = "No prayers yet"
-    await query.edit_message_text(query.data)
-    await update.effective_chat.send_message(v_list)
+    prayer = text_concat.create_prayer_text(prayer_list["prayers"])
 
-async def showall(update, context):
+    # Return prayer request and then prayers
+    await query.edit_message_text(query.data)
+    await update.effective_chat.send_message(prayer)
+
+
+async def list_all(update, context):
     """
-    Usage: /showall
+    Usage: /listall
+
     Show all prayer (untracked and completed)
     """
     new_list = context.chat_data["ongoing"].items()
-    replies = []
-    prayer_info = ""
-    for k, v in new_list:
-        v_list = "\n"
-        if len(v) == 0:
-            v_list += "<i>Not prayed yet</i>\n"
-        for index, prayer_v in enumerate(v):
-            v_list += "{}: {}\n".format(index + 1, prayer_v)
-        # check if it exceeds message length
-        # if exceed add to replies and then reset
-        # NOTE: This is hardcoded value for now
-        to_add = "<b>{}</b> {}\n".format(k, v_list)
-        if len(prayer_info) + len(to_add) > 2000:
-            replies.append(prayer_info)
-            prayer_info = to_add
-        else:
-            prayer_info += to_add
-    # ensure the last text is also added
-    replies.append(prayer_info)
 
-    # TODO: Remove this if no longer in use, this is previous prayer info format
-    # reply = '\n'.join(
-    #     # "{}: {}".format(k, v) for k, v in context.chat_data["ongoing"].items()
-    #     "{}: {}".format(k, v) for k, v in new_list
-    # )
-    # if reply == '':
-    #     reply = 'No prayer requests! Are you slacking?'
-
+    # Get all prayer requests in array and send them in multiple messages
+    replies = text_concat.create_prayer_list_text(new_list)
+    if len(replies) == 0:
+        text = "No prayers or requests! Pray leh~"
+        await update.message.reply_text(text, parse_mode=ParseMode.HTML)
     for reply in replies:
         await update.message.reply_text(reply, parse_mode=ParseMode.HTML)
 
-async def showprayed(update, context):
+
+async def list_pray(update, context):
     """
-    Usage: /showprayed
+    Usage: /listpray
+
     Show all completed prayer (ongoing and value that is not empty)
     """
-    completed = {k:v for k,v in context.chat_data["ongoing"].items() if v}
-    reply = ""
-    for k, v in completed.items():
-        v_list = "\n"
-        for index, prayer_v in enumerate(v):
-            v_list += "{}: {}\n".format(index + 1, prayer_v)
-        reply += "<b>{}</b> {}\n".format(k, v_list)
-    # reply = '\n'.join(
-    #     # "{}: {}".format(k, v) for k, v in context.chat_data["ongoing"].items()
-    #     "{}: {}".format(k, v) for k, v in completed.items()
-    # )
-    await update.message.reply_text(reply, parse_mode=ParseMode.HTML)
+    # Get all prayer request without prayer
+    # prayer requests with prayer is ["prayers"] with non-empty list
+    completed = {
+        k: v for k, v in context.chat_data["ongoing"].items() if len(v["prayers"]) > 0
+    }
 
-async def showvictory(update, context):
-    """Usage: /showvictory"""
-    reply = ""
-    for k, v in context.chat_data["fulfilled"].items():
-        v_list = "\n"
-        for index, prayer_v in enumerate(v):
-            v_list += "{}: {}\n".format(index + 1, prayer_v)
-        reply += "<b>{}</b> {}\n".format(k, v_list)
-    await update.message.reply_text(
-        reply, 
-        parse_mode=ParseMode.HTML,
-        # '\n'.join(
-        #     "{}: {}".format(k, v) for k, v in context.chat_data["fulfilled"].items()
-        # )
+    # Get all prayer info in array and send them in multiple messages
+    replies = text_concat.create_prayer_list_text(completed.items())
+    if len(replies) == 0:
+        text = "No prayers! Pray leh~"
+        await update.message.reply_text(text, parse_mode=ParseMode.HTML)
+    for reply in replies:
+        await update.message.reply_text(reply, parse_mode=ParseMode.HTML)
+
+
+async def list_answered(update, context):
+    """
+    Usage: /listanswered
+
+    Show all prayers that have been answered
+    """
+    # Get all answered prayers in array and send them in multiple messages
+    replies = text_concat.create_prayer_list_text(
+        context.chat_data["fulfilled"].items()
     )
+    if len(replies) == 0:
+        text = "No answered prayers! Don't give up hope!"
+        await update.message.reply_text(text, parse_mode=ParseMode.HTML)
+    for reply in replies:
+        await update.message.reply_text(reply, parse_mode=ParseMode.HTML)
