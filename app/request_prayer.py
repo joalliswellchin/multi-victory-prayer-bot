@@ -47,7 +47,16 @@ async def check_input_prayer_req(update, context):
         )
         context.user_data.clear()
         return ConversationHandler.END
-    else:  # if prayer request does not exist, request for prayer and add metadata
+    # Check if request exists in fulfilled
+    elif update.message.text in context.chat_data["fulfilled"]:
+        await update.message.reply_text(
+            "Prayer request already answered! Edit prayer or delete if you require",
+            reply_markup=ReplyKeyboardRemove(),
+        )
+        context.user_data.clear()
+        return ConversationHandler.END
+    # if prayer request does not exist, request for prayer and add metadata
+    else:
         reply_keyboard = [["Yes", "Not now"]]
         # store this for continuing
         context.user_data["prayer_req"] = update.message.text
