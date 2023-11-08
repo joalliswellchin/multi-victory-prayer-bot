@@ -1,18 +1,5 @@
 """
-Data structures:
-context.chat_data = {
-    "ongoing": {
-        "req": [str]
-    },
-    "fulfilled": {
-        "req": [str]
-    }
-}
-context.user_data = {
-    "prayer_req": str
-}
-
-NEW DATA STRUCTURE:
+PRIVATE CHAT DATA STRUCTURE:
 context.chat_data = {
     "ongoing": {
         "req": {
@@ -45,6 +32,43 @@ context.user_data = {
     "prayer_req": str
 }
 
+GROUP DATA STRUCTURE:
+context.chat_data = {
+    "ongoing": {
+        "req": {
+            "prayers": [
+                {
+                    "prayer": str,
+                    "time": str,
+                }
+            ],
+            "req_time" str,
+            "tags": [str]
+            "req_name": str,
+            "req_user": str,
+        }
+    },
+    "fulfilled": {
+        "req": {
+            "prayers": [
+                {
+                    "prayer": str,
+                    "time": str,
+                }
+            ],
+            "req_time" str,
+            "fulfilled_time": str,
+            "tags": [str],
+            "req_name": str,
+            "req_user": str,
+        }
+    }
+    "tags": [str]
+}
+context.user_data = {
+    "prayer_req": str
+}
+
 Other notes:
 - Completed prayers are prayers with prayer requests and prayer not blank
 - Placing all in one file to make this easier for copy pasta as of now (and other architecture mini-concerns)
@@ -68,6 +92,7 @@ import pray
 import delete_prayer
 import answered
 import common
+from group_chat import migrate as group_helper
 
 from telegram.ext import (
     filters,
@@ -159,6 +184,9 @@ if __name__ == "__main__":
     showall_cmd_handler = CommandHandler("listall", list_prayer.list_all)
     showprayed_cmd_handler = CommandHandler("listpray", list_prayer.list_pray)
     showvictory_cmd_handler = CommandHandler("listanswered", list_prayer.list_answered)
+    application.add_handler(
+        MessageHandler(filters.StatusUpdate.MIGRATE, group_helper.migrate_chat)
+    )
     application.add_handler(start_handler)
     application.add_handler(help_cmd_handler)
     application.add_handler(showunprayed_cmd_handler)

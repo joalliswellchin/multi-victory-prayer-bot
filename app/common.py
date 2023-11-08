@@ -21,6 +21,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.chat_data["ongoing"] = dict()
     if not context.chat_data.get("fulfilled"):
         context.chat_data["fulfilled"] = dict()
+    if not context.chat_data.get("tags"):
+        context.chat_data["tags"] = list()
     intro = """
 Hi Prayer Warrior! Welcome to the MVP bot!
 
