@@ -181,7 +181,7 @@ async def delprayer(update, context):
 # ------------------------------------------------------------------------------
 async def input_del_answered(update, context):
     """
-    When user selects delete prayer request, returns TYPING_DEL_ANSWERED
+    When user selects delete answered, returns TYPING_DEL_ANSWERED
 
     Returns: constants.TYPING_DEL_ANSWERED
     """
@@ -194,13 +194,13 @@ async def input_del_answered(update, context):
 
 async def del_answered(update, context):
     """
-    Delete the prayer request
+    Delete the answered prayer
 
     Returns: ConversationHandler.END
     """
     answered = update.message.text
 
-    # Check if prayer request exists
+    # Check if answered prayer exists
     if not answered in context.chat_data["fulfilled"]:
         await update.message.reply_text(
             "Not able to find answered prayer! Try checking your caps!",
@@ -209,7 +209,7 @@ async def del_answered(update, context):
         context.user_data.clear()
         return ConversationHandler.END
 
-    # Remove prayer request
+    # Remove answered prayer
     context.chat_data["fulfilled"].pop(answered)
     await update.message.reply_text(
         "Answered prayer deleted!",
