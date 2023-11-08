@@ -254,6 +254,10 @@ if __name__ == "__main__":
                     filters.Regex("^(Delete Prayer in Request)$"),
                     delete_prayer.input_delprayer_prayerreq,
                 ),
+                MessageHandler(
+                    filters.Regex("^(Delete Answered Prayer)$"),
+                    delete_prayer.input_del_answered,
+                ),
             ],
             constants.TYPING_DEL_PRAYER_REQ: [
                 MessageHandler(
@@ -271,6 +275,12 @@ if __name__ == "__main__":
                 MessageHandler(
                     filters.TEXT & ~(filters.COMMAND | filters.Regex("^EXIT$")),
                     delete_prayer.delprayer,
+                )
+            ],
+            constants.TYPING_DEL_ANSWERED: [
+                MessageHandler(
+                    filters.TEXT & ~(filters.COMMAND | filters.Regex("^EXIT$")),
+                    delete_prayer.del_answered,
                 )
             ],
         },

@@ -25,8 +25,10 @@ to have answered prayers added with a (set of) prayers, you should add them over
 `Request` then import them over to `Answered`
 
 ## Delete
-Delete allows you to remove any erroneous request or prayers.
-This does NOT apply to answered.
+Delete allows you to remove any erroneous request, prayers or answered prayers.
+This does NOT apply to prayers in answered. As this will affect the holistic
+idea of answered prayers, prayers in answered prayers should not be deleted in
+any use case
 
 
 # APPENDIX

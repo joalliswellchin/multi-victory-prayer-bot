@@ -56,9 +56,7 @@ If you ever need to end the conversation you have with me, just type EXIT (case-
 
 Be sure to reply the messages sent by the bot when you are in a group!
     """
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id, text=help_text
-    )
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=help_text)
 
 
 async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -81,7 +79,7 @@ async def end_convo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
     # Send message
     await update.message.reply_text(
-        "Ending Conversation!",
+        "Stopped command! Don't stop praying!",
         reply_markup=ReplyKeyboardRemove(),
     )
 

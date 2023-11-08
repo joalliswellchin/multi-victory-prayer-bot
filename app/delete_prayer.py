@@ -6,7 +6,7 @@ from telegram.ext import ConversationHandler
 
 
 # ------------------------------------------------------------------------------
-# delete prayer
+# delete prayer option
 # ------------------------------------------------------------------------------
 async def choose_delprayer_mode(update, context):
     """
@@ -16,7 +16,12 @@ async def choose_delprayer_mode(update, context):
 
     Returns: constants.CHOOSE_DEL_PRAYER
     """
-    reply_keyboard = [["Delete Request", "Delete Prayer in Request"]]
+    reply_keyboard = [
+        ["Delete Request"],
+        ["Delete Prayer in Request"],
+        ["Delete Answered Prayer"],
+        ["EXIT"],
+    ]
     await update.message.reply_text(
         "Do you want to remove a prayer request or prayer in a prayer request?",
         reply_markup=ReplyKeyboardMarkup(
@@ -28,7 +33,9 @@ async def choose_delprayer_mode(update, context):
     return constants.CHOOSE_DEL_PRAYER
 
 
-# delete prayer in prayer req
+# ------------------------------------------------------------------------------
+# delete request
+# ------------------------------------------------------------------------------
 async def input_del_prayerreq(update, context):
     """
     When user selects delete prayer request, returns TYPING_DEL_PRAYER_REQ
@@ -72,7 +79,9 @@ async def del_prayer_req(update, context):
     return ConversationHandler.END
 
 
-# delete prayer req
+# ------------------------------------------------------------------------------
+# delete prayer in request
+# ------------------------------------------------------------------------------
 async def input_delprayer_prayerreq(update, context):
     """
     When user selects delete prayer, returns TYPING_DEL_PRAYER_PRAYERREQ
@@ -164,4 +173,50 @@ async def delprayer(update, context):
         reply_markup=ReplyKeyboardRemove(),
     )
     context.user_data.clear()
+    return ConversationHandler.END
+
+
+# ------------------------------------------------------------------------------
+# delete prayer in prayer req
+# ------------------------------------------------------------------------------
+async def input_del_answered(update, context):
+    """
+    When user selects delete prayer request, returns TYPING_DEL_ANSWERED
+
+    Returns: constants.TYPING_DEL_ANSWERED
+    """
+    await update.message.reply_text(
+        "What is the answered prayer?",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+    return constants.TYPING_DEL_ANSWERED
+
+
+async def del_answered(update, context):
+    """
+    Delete the prayer request
+
+    Returns: ConversationHandler.END
+    """
+    answered = update.message.text
+
+    # Check if prayer request exists
+    if not answered in context.chat_data["fulfilled"]:
+        await update.message.reply_text(
+            "Not able to find answered prayer! Try checking your caps!",
+            reply_markup=ReplyKeyboardRemove(),
+        )
+        context.user_data.clear()
+        return ConversationHandler.END
+
+    # Remove prayer request
+    context.chat_data["fulfilled"].pop(answered)
+    await update.message.reply_text(
+        "Answered prayer deleted!",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+
+    # Clear cache
+    context.user_data.clear()
+
     return ConversationHandler.END
