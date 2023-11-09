@@ -7,7 +7,7 @@ from telegram.ext import ConversationHandler
 
 
 # ------------------------------------------------------------------------------
-# add prayer
+# add prayer request
 # ------------------------------------------------------------------------------
 async def input_prayer_req(update, context):
     """
@@ -65,6 +65,8 @@ async def check_input_prayer_req(update, context):
             "tags": list(),
             "prayers": list(),
             "time": datetime.now().strftime(os.environ.get("DATETIME_FORMAT")),
+            "req_name": update.message.from_user.username,
+            "req_user": update.message.from_user.full_name,
         }
         await update.message.reply_text(
             "Prayer request added. Would you like to continue adding a prayer?",

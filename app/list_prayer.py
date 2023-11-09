@@ -24,7 +24,11 @@ async def list_request(update, context):
     }
     # replies = text_concat.create_request_list_text(untracked.items())
     # We use empty_text = "" to create only the requests in the message
-    replies = text_concat.create_prayer_list_text(untracked.items(), empty_text="")
+    # and check if message is from a group
+    is_private = update.message.chat.type == "private"
+    replies = text_concat.create_prayer_list_text(
+        untracked.items(), empty_text="", is_private=is_private
+    )
 
     # If there is no prayer requests, show that different message
     if len(replies) == 0:
@@ -97,8 +101,10 @@ async def list_all(update, context):
     """
     new_list = context.chat_data["ongoing"].items()
 
+    # Check if message is from a group
+    is_private = update.message.chat.type == "private"
     # Get all prayer requests in array and send them in multiple messages
-    replies = text_concat.create_prayer_list_text(new_list)
+    replies = text_concat.create_prayer_list_text(new_list, is_private=is_private)
     if len(replies) == 0:
         text = "No prayers or requests! Pray leh~"
         await update.message.reply_text(text, parse_mode=ParseMode.HTML)
@@ -118,8 +124,12 @@ async def list_pray(update, context):
         k: v for k, v in context.chat_data["ongoing"].items() if len(v["prayers"]) > 0
     }
 
+    # Check if message is from a group
+    is_private = update.message.chat.type == "private"
     # Get all prayer info in array and send them in multiple messages
-    replies = text_concat.create_prayer_list_text(completed.items())
+    replies = text_concat.create_prayer_list_text(
+        completed.items(), is_private=is_private
+    )
     if len(replies) == 0:
         text = "No prayers! Pray leh~"
         await update.message.reply_text(text, parse_mode=ParseMode.HTML)
@@ -133,9 +143,13 @@ async def list_answered(update, context):
 
     Show all prayers that have been answered
     """
+    # Check if message is from a group
+    is_private = update.message.chat.type == "private"
     # Get all answered prayers in array and send them in multiple messages
     replies = text_concat.create_prayer_list_text(
-        context.chat_data["fulfilled"].items(), empty_text=""
+        context.chat_data["fulfilled"].items(),
+        empty_text="",
+        is_private=is_private,
     )
     if len(replies) == 0:
         text = "No answered prayers! Don't give up hope!"

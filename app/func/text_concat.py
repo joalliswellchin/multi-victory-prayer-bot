@@ -41,7 +41,9 @@ def create_prayer_text(texts: List, empty_text="Not prayed yet"):
     return text_list
 
 
-def create_prayer_list_text(prayer_list: Dict, empty_text="Not prayed yet"):
+def create_prayer_list_text(
+    prayer_list: Dict, empty_text="Not prayed yet", is_private=True
+):
     """
     Forms a prayer request to prayer string
 
@@ -62,7 +64,11 @@ def create_prayer_list_text(prayer_list: Dict, empty_text="Not prayed yet"):
         # check if it exceeds message length
         # if exceed add to replies and then reset
         # NOTE: This is hardcoded value for now
-        to_add = "\n<b>{}</b> \n{}".format(k, v_list)
+        if is_private:
+            to_add = f"\n<b>{k}</b>\n{v_list}"
+        else:
+            user_info = f"{v['req_name']} | {v['req_user']}"
+            to_add = f"\n<b>{k}</b>\n{user_info}\n{v_list}"
         if len(prayer_info) + len(to_add) > 2000:
             replies.append(prayer_info)
             prayer_info = to_add

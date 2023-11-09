@@ -5,7 +5,7 @@ from telegram.ext import ConversationHandler
 
 
 # ------------------------------------------------------------------------------
-# add completed prayer
+# add prayer
 # ------------------------------------------------------------------------------
 # this is to get context if not from addprayer
 async def input_complete_prayer_req(update, context):
