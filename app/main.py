@@ -93,7 +93,6 @@ import delete_prayer
 import answered
 import common
 
-# import chat_handler
 from group_chat.migrate import migrate_chat
 from group_chat.start import group_start, group_add
 
@@ -105,7 +104,6 @@ from telegram.ext import (
     PicklePersistence,
     ConversationHandler,
     CallbackQueryHandler,
-    # ChatMemberHandler,
 )
 
 from mongopersistence import MongoPersistence
@@ -192,9 +190,8 @@ if __name__ == "__main__":
     showall_cmd_handler = CommandHandler("listall", list_prayer.list_all)
     showprayed_cmd_handler = CommandHandler("listpray", list_prayer.list_pray)
     showvictory_cmd_handler = CommandHandler("listanswered", list_prayer.list_answered)
-    # application.add_handler(
-    #     ChatMemberHandler(chat_handler.track_chats, ChatMemberHandler.MY_CHAT_MEMBER)
-    # )
+
+    # Adding handlers to application builder
     application.add_handler(
         MessageHandler(filters.StatusUpdate.CHAT_CREATED, group_start)
     )
