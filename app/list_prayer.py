@@ -1,7 +1,8 @@
-# import constants
+import constants
 from func import text_concat
 
-from telegram import InlineKeyboardMarkup, InlineKeyboardButton
+# from telegram import InlineKeyboardMarkup, InlineKeyboardButton
+from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import ConversationHandler
 from telegram.constants import ParseMode
 
@@ -47,33 +48,47 @@ async def pick_request(update, context):
     """
     # Check if there is prayer requests
     if len(context.chat_data["ongoing"].items()) == 0:
-        await update.message.reply_text("No prayer requests! Go ask leh~")
+        await update.message.reply_text(
+            "No prayer requests! Go ask leh~",
+            reply_markup=ReplyKeyboardRemove(),
+        )
         return ConversationHandler.END
 
-    # TODO: fix inline keyboard to have previous and next buttons
-    # TODO: Change item_per_row to env and set it to 1, and change to items_to_display
-    # Get all requests and make them InlineKeyboardButton
-    all_items = [
-        InlineKeyboardButton(k, callback_data=k)
-        for k, _ in context.chat_data["ongoing"].items()
-    ]
+    # uncomment segment for InlineKeyboard display and import statements
+    # # TODO: fix inline keyboard to have previous and next buttons
+    # # TODO: Change item_per_row to env and set it to 1, and change to items_to_display
+    # # Get all requests and make them InlineKeyboardButton
+    # all_items = [
+    #     InlineKeyboardButton(k, callback_data=k)
+    #     for k, _ in context.chat_data["ongoing"].items()
+    # ]
+    # # Form rows for display
+    # inline_keyboard = list()
+    # row = list()
+    # item_per_row = 3
+    # for index, item in enumerate(all_items):
+    #     row.append(item)
+    #     if index % item_per_row == item_per_row - 1:
+    #         inline_keyboard.append(row)
+    #         row = list()
+    # if len(row) > 0:  # add leftover of row to last row
+    #     inline_keyboard.append(row)
+    # await update.message.reply_text(
+    #     "Which prayer request you want to show?",
+    #     reply_markup=InlineKeyboardMarkup(inline_keyboard),
+    # )
 
-    # Form rows for display
-    inline_keyboard = list()
-    row = list()
-    item_per_row = 3
-    for index, item in enumerate(all_items):
-        row.append(item)
-        if index % item_per_row == item_per_row - 1:
-            inline_keyboard.append(row)
-            row = list()
-    if len(row) > 0:  # add leftover of row to last row
-        inline_keyboard.append(row)
-
+    reply_keyboard = [[k] for k, _ in context.chat_data["ongoing"].items()]
+    reply_keyboard.append(["EXIT"])
     await update.message.reply_text(
         "Which prayer request you want to show?",
-        reply_markup=InlineKeyboardMarkup(inline_keyboard),
+        reply_markup=ReplyKeyboardMarkup(
+            reply_keyboard,
+            one_time_keyboard=True,
+            input_field_placeholder="Pick a prayer request",
+        ),
     )
+    return constants.DISPLAY_PICKED_PRAYER
 
 
 async def picked_request_prayer_list(update, context):
@@ -82,15 +97,25 @@ async def picked_request_prayer_list(update, context):
 
     Shows prayers of prayer request, after /pickrequest
     """
-    # Get selected InlineKeyboardButton
-    query = update.callback_query
-    await query.answer()
-    prayer_list = context.chat_data["ongoing"][query.data]
-    prayer = text_concat.create_prayer_text(prayer_list["prayers"])
+    # uncomment segment for InlineKeyboard display and import statements
+    # # Get selected InlineKeyboardButton
+    # query = update.callback_query
+    # await query.answer()
+    # prayer_list = context.chat_data["ongoing"][query.data]
+    # prayer = text_concat.create_prayer_text(prayer_list["prayers"])
+    # # Return prayer request and then prayers
+    # await query.edit_message_text(query.data)
+    # await update.effective_chat.send_message(prayer)
 
-    # Return prayer request and then prayers
-    await query.edit_message_text(query.data)
-    await update.effective_chat.send_message(prayer)
+    # return prayer request and it's prayer contents
+    query = update.message.text
+    prayer_list = context.chat_data["ongoing"][query]
+    prayer = text_concat.create_prayer_text(prayer_list["prayers"])
+    await update.message.reply_text(
+        query,
+        reply_markup=ReplyKeyboardRemove(),
+    )
+    await update.effective_chat.send_message(prayer, parse_mode=ParseMode.HTML)
 
 
 async def list_all(update, context):

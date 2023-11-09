@@ -184,9 +184,6 @@ if __name__ == "__main__":
     start_handler = CommandHandler("start", common.start)
     help_cmd_handler = CommandHandler("help", common.help)
     showunprayed_cmd_handler = CommandHandler("listrequest", list_prayer.list_request)
-    showprayerrequest_cmd_handler = CommandHandler(
-        "pickrequest", list_prayer.pick_request
-    )
     showall_cmd_handler = CommandHandler("listall", list_prayer.list_all)
     showprayed_cmd_handler = CommandHandler("listpray", list_prayer.list_pray)
     showvictory_cmd_handler = CommandHandler("listanswered", list_prayer.list_answered)
@@ -202,10 +199,6 @@ if __name__ == "__main__":
     application.add_handler(start_handler)
     application.add_handler(help_cmd_handler)
     application.add_handler(showunprayed_cmd_handler)
-    application.add_handler(showprayerrequest_cmd_handler)
-    application.add_handler(
-        CallbackQueryHandler(list_prayer.picked_request_prayer_list)
-    )  # this provides response for pick_request
     application.add_handler(showall_cmd_handler)
     application.add_handler(showprayed_cmd_handler)
     application.add_handler(showvictory_cmd_handler)
@@ -326,11 +319,23 @@ if __name__ == "__main__":
         },
         fallbacks=[MessageHandler(filters.Regex("^EXIT$"), common.end_convo)],
     )
+    showprayerrequest_cmd_handler = ConversationHandler(
+        entry_points=[CommandHandler("pickrequest", list_prayer.pick_request)],
+        states={
+            constants.DISPLAY_PICKED_PRAYER: [
+                MessageHandler(
+                    filters.TEXT & ~(filters.COMMAND | filters.Regex("^EXIT$")),
+                    list_prayer.picked_request_prayer_list,
+                )
+            ],
+        },
+        fallbacks=[MessageHandler(filters.Regex("^EXIT$"), common.end_convo)],
+    )
     application.add_handler(prayerreq_conv_handler)
     application.add_handler(prayer_conv_handler)
     application.add_handler(fulfill_conv_handler)
     application.add_handler(addfulfill_conv_handler)
-    # application.add_handler(editprayer_conv_handler)
+    application.add_handler(showprayerrequest_cmd_handler)
     application.add_handler(delprayer_conv_handler)
 
     # Handle all other commands that are not recognised

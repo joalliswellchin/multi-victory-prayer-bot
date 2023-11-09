@@ -32,7 +32,8 @@ async def check_input_prayer_req(update, context):
 
     Returns: ConversationHandler.END OR constants.NEXT_PRAYER
     """
-    # This 64 characters is the limit of InlineKeyboard, later used in pick_request
+    # This 64 characters is the limit of InlineKeyboard and ReplyKeyboardMarkup
+    # buttons, later used in pick_request
     if len(update.message.text) >= 64:
         await update.message.reply_text(
             "Please type in a prayer request in less than 64 characters"
