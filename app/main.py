@@ -92,7 +92,10 @@ import pray
 import delete_prayer
 import answered
 import common
-from group_chat import migrate as group_helper
+
+# import chat_handler
+from group_chat.migrate import migrate_chat
+from group_chat.start import group_start, group_add
 
 from telegram.ext import (
     filters,
@@ -102,6 +105,7 @@ from telegram.ext import (
     PicklePersistence,
     ConversationHandler,
     CallbackQueryHandler,
+    # ChatMemberHandler,
 )
 
 from mongopersistence import MongoPersistence
@@ -119,19 +123,19 @@ if __name__ == "__main__":
     # Default for LOCAL and any other env
     application = (
         ApplicationBuilder()
-        .token(os.environ["TELEGRAM_API_KEY"])
+        .token(os.environ.get("TELEGRAM_API_KEY"))
         .concurrent_updates(True)
         .build()
     )
 
     # Create application with pickle file reference and pass it to bot token
-    if os.environ["ENV"] == "UAT":
+    if os.environ.get("ENV") == "UAT":
         # TODO: Set up for UAT
         print("UAT not available")
-    elif os.environ["ENV"] == "PROD":
+    elif os.environ.get("ENV") == "PROD":
         # TODO: Set up for PROD
         print("PROD not available")
-    elif os.environ["ENV"] == "LOCAL" and os.environ["DB_ENV"] == "LOCAL_FILE":
+    elif os.environ.get("ENV") == "LOCAL" and os.environ.get("DB_ENV") == "LOCAL_FILE":
         persistence = PicklePersistence(
             filepath=os.path.dirname(os.path.realpath(__file__))
             + "/assets/saved_convo",
@@ -139,27 +143,31 @@ if __name__ == "__main__":
         )
         application = (
             ApplicationBuilder()
-            .token(os.environ["TELEGRAM_API_KEY"])
+            .token(os.environ.get("TELEGRAM_API_KEY"))
             .concurrent_updates(True)
             .persistence(persistence)
             .build()
         )
-    elif os.environ["ENV"] == "LOCAL" and os.environ["DB_ENV"] == "MONGO":
-        application = ApplicationBuilder().token(os.environ["TELEGRAM_API_KEY"]).build()
+    elif os.environ.get("ENV") == "LOCAL" and os.environ.get("DB_ENV") == "MONGO":
+        application = (
+            ApplicationBuilder().token(os.environ.get("TELEGRAM_API_KEY")).build()
+        )
         # conn.client
-    elif os.environ["ENV"] == "LOCAL" and os.environ["DB_ENV"] == "MONGO_PERSIST":
-        MONGODB_USER = os.environ["MONGODB_USER"]
-        MONGODB_PWD = os.environ["MONGODB_PWD"]
-        MONGODB_CLUSTER = os.environ["MONGODB_CLUSTER"]
+    elif (
+        os.environ.get("ENV") == "LOCAL" and os.environ.get("DB_ENV") == "MONGO_PERSIST"
+    ):
+        MONGODB_USER = os.environ.get("MONGODB_USER")
+        MONGODB_PWD = os.environ.get("MONGODB_PWD")
+        MONGODB_CLUSTER = os.environ.get("MONGODB_CLUSTER")
         # uri = "mongodb://username:password@your-ip:27017/"
         uri = f"mongodb+srv://{MONGODB_USER}:{MONGODB_PWD}@{MONGODB_CLUSTER}.dnv17te.mongodb.net/?retryWrites=true&w=majority"
         persistence = MongoPersistence(
             mongo_url=uri,
-            db_name=os.environ["MONGODB_DBNAME"],
-            name_col_user_data=os.environ["MONGODB_USER_DATA"],  # optional
-            name_col_chat_data=os.environ["MONGODB_CHAT_DATA"],  # optional
-            name_col_bot_data=os.environ["MONGODB_BOT_DATA"],  # optional
-            name_col_conversations_data=os.environ["MONGODB_CONVO"],  # optional
+            db_name=os.environ.get("MONGODB_DBNAME"),
+            name_col_user_data=os.environ.get("MONGODB_USER_DATA"),  # optional
+            name_col_chat_data=os.environ.get("MONGODB_CHAT_DATA"),  # optional
+            name_col_bot_data=os.environ.get("MONGODB_BOT_DATA"),  # optional
+            name_col_conversations_data=os.environ.get("MONGODB_CONVO"),  # optional
             create_col_if_not_exist=True,  # optional
             # ignore_general_data=["cache"],
             # ignore_user_data=["foo", "bar"],
@@ -168,7 +176,7 @@ if __name__ == "__main__":
         )
         application = (
             ApplicationBuilder()
-            .token(os.environ["TELEGRAM_API_KEY"])
+            .token(os.environ.get("TELEGRAM_API_KEY"))
             .concurrent_updates(True)
             .persistence(persistence)
             .build()
@@ -184,9 +192,16 @@ if __name__ == "__main__":
     showall_cmd_handler = CommandHandler("listall", list_prayer.list_all)
     showprayed_cmd_handler = CommandHandler("listpray", list_prayer.list_pray)
     showvictory_cmd_handler = CommandHandler("listanswered", list_prayer.list_answered)
+    # application.add_handler(
+    #     ChatMemberHandler(chat_handler.track_chats, ChatMemberHandler.MY_CHAT_MEMBER)
+    # )
     application.add_handler(
-        MessageHandler(filters.StatusUpdate.MIGRATE, group_helper.migrate_chat)
+        MessageHandler(filters.StatusUpdate.CHAT_CREATED, group_start)
     )
+    application.add_handler(
+        MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, group_add)
+    )
+    application.add_handler(MessageHandler(filters.StatusUpdate.MIGRATE, migrate_chat))
     application.add_handler(start_handler)
     application.add_handler(help_cmd_handler)
     application.add_handler(showunprayed_cmd_handler)

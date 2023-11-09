@@ -1,6 +1,8 @@
 async def migrate_chat(update, context):
     """
     duplicate all info into new chat when moved to SUPER_GROUP
+
+    Returns: None
     """
     old_chat_id = update.message.chat.id
     new_chat_id = update.message.migrate_to_chat_id
