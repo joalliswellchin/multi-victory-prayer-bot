@@ -42,7 +42,9 @@ def create_prayer_text(texts: List, empty_text="Not prayed yet"):
 
 
 def create_prayer_list_text(
-    prayer_list: Dict, empty_text="Not prayed yet", is_private=True
+    prayer_list: Dict,
+    empty_text="Not prayed yet",
+    is_private=True,
 ):
     """
     Forms a prayer request to prayer string
@@ -69,6 +71,49 @@ def create_prayer_list_text(
         else:
             user_info = f"{v['req_name']} | {v['req_user']}"
             to_add = f"\n<b>{k}</b>\n{user_info}\n{v_list}"
+        if len(prayer_info) + len(to_add) > 2000:
+            replies.append(prayer_info)
+            prayer_info = to_add
+        else:
+            prayer_info += to_add
+    # ensure the last text is also added
+    # if empty, dont add so that it will cover for replies that are empty to be
+    # of 0 len
+    if len(prayer_info) > 0:
+        replies.append(prayer_info)
+    return replies
+
+
+def create_answered_prayer_list_text(
+    prayer_list: Dict,
+    empty_text="",
+    is_private=True,
+):
+    """
+    Forms a prayer request to prayer string
+
+    Returns: String
+
+    Sample return:
+    **request_1**
+    1: prayer_1
+
+    **request_2**
+    2: prayer_2
+    """
+    replies = []
+    prayer_info = ""
+    for k, v in prayer_list:
+        v_list = create_prayer_text(v["prayers"], empty_text)
+
+        # check if it exceeds message length
+        # if exceed add to replies and then reset
+        # NOTE: This is hardcoded value for now
+        if is_private:
+            to_add = f"\n<b>{k}</b>\nAnswered time: {v['fulfilled_time']}\n{v_list}"
+        else:
+            user_info = f"{v['req_name']} | {v['req_user']}"
+            to_add = f"\n<b>{k}</b>\nAnswered time: {v['fulfilled_time']}\n{user_info}\n{v_list}"
         if len(prayer_info) + len(to_add) > 2000:
             replies.append(prayer_info)
             prayer_info = to_add

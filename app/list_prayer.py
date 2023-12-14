@@ -171,7 +171,7 @@ async def list_answered(update, context):
     # Check if message is from a group
     is_private = update.message.chat.type == "private"
     # Get all answered prayers in array and send them in multiple messages
-    replies = text_concat.create_prayer_list_text(
+    replies = text_concat.create_answered_prayer_list_text(
         context.chat_data["fulfilled"].items(),
         empty_text="",
         is_private=is_private,

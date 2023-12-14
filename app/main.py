@@ -9,7 +9,7 @@ context.chat_data = {
                     "time": str,
                 }
             ],
-            "req_time" str,
+            "time" str,
             "tags": [str]
         }
     },
@@ -21,7 +21,7 @@ context.chat_data = {
                     "time": str,
                 }
             ],
-            "req_time" str,
+            "time" str,
             "fulfilled_time": str,
             "tags": [str],
         }
@@ -42,7 +42,7 @@ context.chat_data = {
                     "time": str,
                 }
             ],
-            "req_time" str,
+            "time" str,
             "tags": [str]
             "req_name": str,
             "req_user": str,
@@ -56,7 +56,7 @@ context.chat_data = {
                     "time": str,
                 }
             ],
-            "req_time" str,
+            "time" str,
             "fulfilled_time": str,
             "tags": [str],
             "req_name": str,
@@ -76,7 +76,7 @@ Other notes:
 - context.userdata is only for temporary data within a conversation
 """
 
-from datetime import datetime
+# from datetime import datetime
 import logging
 import os
 
