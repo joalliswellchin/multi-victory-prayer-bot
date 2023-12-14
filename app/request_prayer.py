@@ -65,7 +65,8 @@ async def check_input_prayer_req(update, context):
         context.chat_data["ongoing"][update.message.text] = {
             "tags": list(),
             "prayers": list(),
-            "time": datetime.now().strftime(os.environ.get("DATETIME_FORMAT")),
+            # "time": datetime.now().strftime(os.environ.get("DATETIME_FORMAT")),
+            "time": update.message.date.strftime(os.environ.get("DATETIME_FORMAT")),
             "req_name": update.message.from_user.username,
             "req_user": update.message.from_user.full_name,
         }

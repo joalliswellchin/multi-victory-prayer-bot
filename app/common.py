@@ -122,7 +122,8 @@ async def addprayer(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     Returns: ConversationHandler.END
     """
     prayer_req = context.user_data["prayer_req"]
-    now = datetime.now().strftime(os.environ.get("DATETIME_FORMAT"))
+    # now = datetime.now().strftime(os.environ.get("DATETIME_FORMAT"))
+    now = update.message.date.strftime(os.environ.get("DATETIME_FORMAT"))
 
     # Add prayer info to chat data
     context.chat_data["ongoing"][prayer_req]["prayers"].append(

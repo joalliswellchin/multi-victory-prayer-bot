@@ -18,7 +18,7 @@ def create_prayer_text(texts: List, empty_text="Not prayed yet"):
     Sample input:
     [
         {
-            "time": "%d/%m/%Y, %H:%M:%S",
+            "time": "%d/%m/%Y, %H:%M:%S %z",
             "prayer": "prayer text"
         }
     ]

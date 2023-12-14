@@ -47,7 +47,7 @@ async def check_input_fulfillprayer(update, context):
     ]
     context.chat_data["fulfilled"][prayer_req][
         "fulfilled_time"
-    ] = datetime.now().strftime(os.environ.get("DATETIME_FORMAT"))
+    ] = update.message.date.strftime(os.environ.get("DATETIME_FORMAT"))
 
     # remove prayer request from request list, then clean up conversation data
     context.chat_data["ongoing"].pop(prayer_req)
@@ -95,7 +95,7 @@ async def addfulfillprayer(update, context):
     # add fulfilled prayer directly and include the time
     context.chat_data["fulfilled"][answered_prayer] = {
         "prayers": list(),
-        "fulfilled_time": datetime.now().strftime(
+        "fulfilled_time": update.message.date.strftime(
             os.environ.get("DATETIME_FORMAT")
         ),
     }
