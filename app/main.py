@@ -92,6 +92,7 @@ import pray
 import delete_prayer
 import answered
 import common
+import document
 
 from group_chat.migrate import migrate_chat
 from group_chat.start import group_start, group_add
@@ -331,12 +332,29 @@ if __name__ == "__main__":
         },
         fallbacks=[MessageHandler(filters.Regex("^EXIT$"), common.end_convo)],
     )
+    document_conv_handler = ConversationHandler(
+        entry_points=[CommandHandler("getreview", document.doc_gen)],
+        states={
+            constants.GENERATE_DOCUMENT: [
+                MessageHandler(
+                    filters.Regex("^(Yes)$"),
+                    document.doc_gen_remove_prayer,
+                ),
+                MessageHandler(
+                    filters.Regex("^(Not now)$"),
+                    document.end_doc_gen_convo,
+                ),
+            ],
+        },
+        fallbacks=[MessageHandler(filters.Regex("^EXIT$"), document.end_doc_gen_convo)],
+    )
     application.add_handler(prayerreq_conv_handler)
     application.add_handler(prayer_conv_handler)
     application.add_handler(fulfill_conv_handler)
     application.add_handler(addfulfill_conv_handler)
     application.add_handler(showprayerrequest_cmd_handler)
     application.add_handler(delprayer_conv_handler)
+    application.add_handler(document_conv_handler)
 
     # Handle all other commands that are not recognised
     unknown_handler = MessageHandler(filters.COMMAND, common.unknown)
